@@ -16,12 +16,6 @@ This server acts as a **bridge** between your LLM and your S3-stored documentati
 5. **🔍 Searches**: When your LLM needs information, it performs semantic search to find the most relevant passages
 6. **🔄 Syncs**: Intelligently detects changes (new, modified, or deleted files) and updates the index accordingly
 
-```mermaid
-graph LR
-    S3[S3 Bucket<br/>Markdown Docs] -->|Scan & Sync| Server[S3 Doc MCP Server<br/>Chunks + Vectorizes + Stores]
-    Server -->|MCP Tools| LLM[LLM<br/>Semantic Search]
-```
-
 ## 🎯 Key Features
 
 ### 🔌 Universal S3 Compatibility
