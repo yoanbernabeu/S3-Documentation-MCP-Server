@@ -1,0 +1,53 @@
+services:
+  s3-doc-mcp:
+    build: .
+    container_name: s3-doc-mcp
+    ports:
+      - "3031:3000"
+    environment:
+      # S3 Configuration
+      - S3_ENDPOINT=${S3_ENDPOINT}
+      - S3_REGION=${S3_REGION:-us-east-1}
+      - S3_ACCESS_KEY_ID=${S3_ACCESS_KEY_ID}
+      - S3_SECRET_ACCESS_KEY=${S3_SECRET_ACCESS_KEY}
+      - S3_BUCKET_NAME=${S3_BUCKET_NAME}
+      - S3_PREFIX=${S3_PREFIX:-docs/}
+      - S3_FORCE_PATH_STYLE=${S3_FORCE_PATH_STYLE:-false}
+      
+      # Ollama Configuration (external)
+      # - OLLAMA_BASE_URL=${OLLAMA_BASE_URL:-http://host.docker.internal:11434}
+      - OLLAMA_BASE_URL=http://host.docker.internal:11434
+      - OLLAMA_EMBEDDING_MODEL=${OLLAMA_EMBEDDING_MODEL:-nomic-embed-text}
+      
+      # RAG Configuration
+      - CHUNK_SIZE=${CHUNK_SIZE:-1000}
+      - CHUNK_OVERLAP=${CHUNK_OVERLAP:-200}
+      - MAX_RESULTS=${MAX_RESULTS:-4}
+      - MIN_SIMILARITY_SCORE=${MIN_SIMILARITY_SCORE:-0.35}
+      
+      # Synchronization Configuration
+      - SYNC_MODE=${SYNC_MODE:-startup}
+      - SYNC_INTERVAL_MINUTES=${SYNC_INTERVAL_MINUTES:-5}
+      - ENABLE_EMBEDDINGS_CACHE=${ENABLE_EMBEDDINGS_CACHE:-true}
+      
+      # Server Configuration
+      - PORT=3000
+      - HOST=0.0.0.0
+      - LOG_LEVEL=${LOG_LEVEL:-info}
+    
+    volumes:
+      # Persist vector store data
+      - vector-store-data:/app/data/hnswlib-store
+    
+    restart: unless-stopped
+    
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3000/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1); }).on('error', () => process.exit(1));"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+volumes:
+  vector-store-data:
+
