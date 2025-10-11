@@ -202,7 +202,12 @@ export class HNSWVectorStore {
     // Update index
     this.keyIndex.delete(s3Key);
 
-    await this.save();
+    // Only save if the store is not empty
+    // An empty store without any documents added cannot be saved
+    if (keptDocs.length > 0) {
+      await this.save();
+    }
+    
     logger.success(`✅ ${idsToRemove.length} chunks removed for ${s3Key}`);
     
     return idsToRemove.length;
@@ -310,6 +315,14 @@ export class HNSWVectorStore {
    */
   async save(): Promise<void> {
     if (!this.store) return;
+    
+    // Check if store has documents before saving
+    // An empty store without any documents added cannot be saved
+    const docCount = await this.getDocumentCount();
+    if (docCount === 0) {
+      logger.debug(`⏭️  Skipping save: vector store is empty`);
+      return;
+    }
     
     // Create directory if necessary
     const dir = this.storePath.substring(0, this.storePath.lastIndexOf('/'));

@@ -19,15 +19,15 @@ Give your LLM semantic search capabilities over Markdown documentation stored on
 # You need Ollama running on your machine
 ollama pull nomic-embed-text
 
-# 2. Install
-npm install
-cp env.example .env  # Configure your S3 credentials
+# 2. Configure
+cp env.example .env  # Add your S3 credentials
 
 # 3. Run
 docker run -d \
   --name s3-doc-mcp \
   -p 3000:3000 \
   --env-file .env \
+  -e OLLAMA_BASE_URL=http://host.docker.internal:11434 \
   -v $(pwd)/data:/app/data \
   yoanbernabeu/s3-doc-mcp:latest
 ```
