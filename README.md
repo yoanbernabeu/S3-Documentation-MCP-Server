@@ -5,12 +5,6 @@
 
 Give your LLM semantic search capabilities over Markdown documentation stored on S3, with **100% local embeddings** (no API costs).
 
-```mermaid
-graph LR
-    S3[S3 Bucket] -->|Sync| Server[MCP Server]
-    Server -->|Vector Search| LLM[Claude/GPT]
-```
-
 > [!IMPORTANT]  
 > 🚧 This project is a work in progress.
 > APIs and behavior may change at any time, and backward compatibility is not ensured.
