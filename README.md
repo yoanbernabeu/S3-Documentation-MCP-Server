@@ -17,17 +17,9 @@ This server acts as a **bridge** between your LLM and your S3-stored documentati
 6. **🔄 Syncs**: Intelligently detects changes (new, modified, or deleted files) and updates the index accordingly
 
 ```mermaid
-graph TB
-    S3["📦 S3 Bucket<br/>(Markdown Documentation)"]
-    Server["🖥️ S3 Doc MCP Server<br/>• Chunks docs<br/>• Vectorizes<br/>• Stores locally"]
-    LLM["🤖 LLM (Claude/GPT)<br/>search_documentation('How to...?')<br/>↓<br/>Gets relevant context"]
-    
-    S3 -->|"1. Scan & Sync"| Server
-    Server -->|"2. MCP Tools"| LLM
-    
-    style S3 fill:#e1f5ff
-    style Server fill:#fff3e0
-    style LLM fill:#f3e5f5
+graph LR
+    S3[S3 Bucket<br/>Markdown Docs] -->|Scan & Sync| Server[S3 Doc MCP Server<br/>Chunks + Vectorizes + Stores]
+    Server -->|MCP Tools| LLM[LLM<br/>Semantic Search]
 ```
 
 ## 🎯 Key Features
@@ -99,89 +91,22 @@ Triggers index synchronization with S3.
 
 ## 🔧 How It Works
 
-### Architecture Overview
+### Architecture
 
 ```mermaid
 graph TD
-    S3["📦 S3 Bucket<br/>Markdown Files"]
-    
-    S3Loader["S3Loader<br/>• Lists .md files<br/>• Downloads content<br/>• Tracks ETags"]
-    
-    SyncService["SyncService<br/>• Detects changes<br/>• Incremental sync<br/>• Full reindex"]
-    
-    VectorStore["HNSWVectorStore<br/>1️⃣ Text Splitting (1000 chars/chunk)<br/>2️⃣ Vectorization (Ollama)<br/>3️⃣ Vector Storage (HNSWLib)<br/>4️⃣ Persistence (./data/)"]
-    
-    HTTPServer["🌐 HTTP Server<br/>Express + MCP<br/>POST /mcp"]
-    
-    Tools["🛠️ MCP Tools<br/>• search_documentation<br/>• refresh_index"]
-    
-    LLM["🤖 LLM Client<br/>Claude, GPT, etc.<br/>Semantic Search"]
-    
-    S3 -->|Load| S3Loader
-    S3Loader -->|Documents| SyncService
-    SyncService -->|Index| VectorStore
-    VectorStore -->|Vectors| HTTPServer
-    HTTPServer -->|Expose| Tools
-    Tools -->|MCP Protocol| LLM
-    
-    style S3 fill:#e3f2fd
-    style S3Loader fill:#fff3e0
-    style SyncService fill:#fff3e0
-    style VectorStore fill:#e8f5e9
-    style HTTPServer fill:#f3e5f5
-    style Tools fill:#f3e5f5
-    style LLM fill:#fce4ec
+    S3[S3 Bucket] --> Loader[S3Loader]
+    Loader --> Sync[SyncService<br/>Detects changes]
+    Sync --> Vector[VectorStore<br/>Split + Embed + Index]
+    Vector --> Server[HTTP Server<br/>MCP Endpoint]
+    Server --> LLM[LLM Client]
 ```
 
-### Data Flow
-
-#### 1️⃣ **Indexing Process**
-
-```mermaid
-graph LR
-    A["📄 Markdown File<br/>(S3)"] --> B["🔪 Split into chunks<br/>RecursiveCharacterTextSplitter"]
-    B --> C["🧮 Generate embeddings<br/>Ollama: nomic-embed-text"]
-    C --> D["💾 Store vectors<br/>HNSWLib + cosine"]
-    D --> E["💽 Save to disk<br/>./data/hnswlib-store/"]
-    
-    style A fill:#e3f2fd
-    style B fill:#fff3e0
-    style C fill:#e8f5e9
-    style D fill:#f3e5f5
-    style E fill:#fce4ec
-```
-
-#### 2️⃣ **Search Process**
-
-```mermaid
-graph LR
-    A["❓ User Query<br/>'How to configure S3?'"] --> B["🧮 Vectorize query<br/>Ollama"]
-    B --> C["🔍 Similarity search<br/>HNSWLib"]
-    C --> D["🎯 Filter by threshold<br/>score >= 0.5"]
-    D --> E["📋 Return top K results<br/>+ sources"]
-    
-    style A fill:#e3f2fd
-    style B fill:#fff3e0
-    style C fill:#e8f5e9
-    style D fill:#f3e5f5
-    style E fill:#fce4ec
-```
-
-#### 3️⃣ **Sync Process**
-
-```mermaid
-graph LR
-    A["📋 List S3 files<br/>(.md only)"] --> B["⚖️ Compare with<br/>.sync-state.json"]
-    B --> C["🔍 Detect changes<br/>New | Modified | Deleted"]
-    C --> D["⚡ Apply changes<br/>to vector store"]
-    D --> E["💾 Save state<br/>+ vector index"]
-    
-    style A fill:#e3f2fd
-    style B fill:#fff3e0
-    style C fill:#e8f5e9
-    style D fill:#f3e5f5
-    style E fill:#fce4ec
-```
+**Key Components:**
+- **S3Loader**: Lists and downloads `.md` files, tracks changes via ETag
+- **SyncService**: Incremental sync (only changed files) or full reindex
+- **VectorStore**: Splits text (1000 chars), vectorizes with Ollama, stores in HNSWLib
+- **MCP Server**: Exposes `search_documentation` and `refresh_index` tools
 
 ### Technical Stack
 
