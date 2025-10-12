@@ -1,0 +1,9 @@
+blank_issues_enabled: true
+contact_links:
+  - name: 📚 Documentation
+    url: https://github.com/yoanbernabeu/S3-Documentation-MCP-Server/blob/main/README.md
+    about: Read the project documentation
+  - name: 💬 Discussions
+    url: https://github.com/yoanbernabeu/S3-Documentation-MCP-Server/discussions
+    about: Ask questions and discuss ideas with the community
+
