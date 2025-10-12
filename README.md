@@ -1,6 +1,7 @@
 # S3 Documentation MCP Server
 
 [![CI](https://github.com/yoanbernabeu/S3-Documentation-MCP-Server/actions/workflows/ci.yml/badge.svg)](https://github.com/yoanbernabeu/S3-Documentation-MCP-Server/actions/workflows/ci.yml)
+[![codecov](https://codecov.io/gh/yoanbernabeu/S3-Documentation-MCP-Server/branch/main/graph/badge.svg)](https://codecov.io/gh/yoanbernabeu/S3-Documentation-MCP-Server)
 [![Build and Push Docker Image](https://github.com/yoanbernabeu/S3-Documentation-MCP-Server/actions/workflows/docker-build.yml/badge.svg)](https://github.com/yoanbernabeu/S3-Documentation-MCP-Server/actions/workflows/docker-build.yml)
 [![Docker Hub](https://img.shields.io/docker/pulls/yoanbernabeu/s3-doc-mcp?logo=docker&logoColor=white)](https://hub.docker.com/r/yoanbernabeu/s3-doc-mcp)
 
