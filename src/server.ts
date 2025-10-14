@@ -24,6 +24,13 @@ import {
   type RefreshIndexInput,
 } from './tools/refresh-index.js';
 
+import {
+  getFullDocument,
+  getFullDocumentInputSchema,
+  getFullDocumentOutputSchema,
+  type GetFullDocumentInput,
+} from './tools/get-full-document.js';
+
 import { config, logger } from './config/index.js';
 import { z } from 'zod';
 
@@ -143,6 +150,50 @@ export class S3DocMCPServer {
           };
         } catch (error) {
           logger.error(`Error in refresh_index:`, error);
+          throw error;
+        }
+      }
+    );
+
+    // Register get_full_document tool
+    this.server.registerTool(
+      'get_full_document',
+      {
+        title: 'Get Full Document',
+        description: 'Retrieves the complete content of a Markdown file from S3, along with its metadata (size, last modification date, ETag, chunk count).',
+        inputSchema: {
+          s3_key: z.string().describe('S3 document key (e.g., "docs/authentification_magique_symfony.md")'),
+        },
+        outputSchema: {
+          s3_key: z.string(),
+          content: z.string(),
+          metadata: z.object({
+            size_bytes: z.number(),
+            last_modified: z.string(),
+            etag: z.string(),
+            chunk_count: z.number().optional(),
+          }),
+        },
+      },
+      async ({ s3_key }) => {
+        try {
+          const result = await getFullDocument(
+            { s3_key },
+            this.s3Loader,
+            this.syncService
+          );
+
+          return {
+            content: [
+              {
+                type: 'text' as const,
+                text: JSON.stringify(result, null, 2),
+              },
+            ],
+            structuredContent: result,
+          };
+        } catch (error) {
+          logger.error(`Error in get_full_document:`, error);
           throw error;
         }
       }

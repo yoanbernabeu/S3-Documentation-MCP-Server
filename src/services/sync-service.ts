@@ -195,10 +195,8 @@ export class SyncService {
         // Full mode: reindex everything
         logger.info(`🔄 FULL mode: complete reindexing...`);
         
-        // Remove all existing documents
-        for (const key of Object.keys(this.syncState.documents)) {
-          await this.vectorStore.removeByKey(key);
-        }
+        // Clear all documents from vector store
+        await this.vectorStore.clearAll();
         this.syncState.documents = {};
 
         // Reindex all documents
@@ -305,6 +303,13 @@ export class SyncService {
       indexed: Object.values(this.syncState.documents).filter(d => d.status === 'indexed').length,
       errors: Object.values(this.syncState.documents).filter(d => d.status === 'error').length,
     };
+  }
+
+  /**
+   * Get document information from sync state
+   */
+  getDocumentInfo(key: string): SyncState['documents'][string] | null {
+    return this.syncState.documents[key] ?? null;
   }
 }
 

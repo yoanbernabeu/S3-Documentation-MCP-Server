@@ -399,7 +399,7 @@ describe('SyncService', () => {
 
       expect(metrics.documentsScanned).toBe(1);
       expect(metrics.documentsAdded).toBe(1);
-      expect(mockVectorStore.removeByKey).toHaveBeenCalledWith('old.md');
+      expect(mockVectorStore.clearAll).toHaveBeenCalled();
     });
 
     it('should handle errors gracefully', async () => {
