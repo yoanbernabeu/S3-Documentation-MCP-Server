@@ -164,6 +164,19 @@ export class HNSWVectorStore {
   }
 
   /**
+   * Clear all documents from the vector store
+   */
+  async clearAll(): Promise<void> {
+    logger.info(`🗑️  Clearing all documents from vector store...`);
+    
+    // Create a new empty store
+    this.store = new HNSWLib(this.embeddings, { space: 'cosine' });
+    this.keyIndex.clear();
+    
+    logger.success(`✅ Vector store cleared`);
+  }
+
+  /**
    * Remove all documents for an S3 key
    */
   async removeByKey(s3Key: string): Promise<number> {

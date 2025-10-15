@@ -114,7 +114,7 @@ Edit your Claude Desktop configuration file:
 }
 ```
 
-Restart your MCP client, and you should now see the `search_documentation` and `refresh_index` tools available.
+Restart your MCP client, and you should now see the `search_documentation`, `refresh_index`, and `get_full_document` tools available.
 
 > 💡 **Tip**: If using Docker, make sure the port mapping matches your configuration (default is `3000:3000`)
 
@@ -124,7 +124,7 @@ Restart your MCP client, and you should now see the `search_documentation` and `
 - 🧠 **Local RAG**: Ollama embeddings ([nomic-embed-text](https://ollama.com/library/nomic-embed-text)) - no API costs
 - 🔄 **Smart Sync**: Incremental updates via ETag comparison
 - ⚡ **Fast Search**: HNSWLib vector index with cosine similarity
-- 🛠️ **2 MCP Tools**: `search_documentation` and `refresh_index`
+- 🛠️ **3 MCP Tools**: `search_documentation`, `refresh_index`, and `get_full_document`
 
 ## How It Works
 
@@ -136,7 +136,7 @@ The server follows a simple pipeline:
    - Splits documents into chunks (1000 characters by default)
    - Generates embeddings using Ollama's [`nomic-embed-text`](https://ollama.com/library/nomic-embed-text) model (running locally)
    - Indexes vectors using **HNSWLib** for fast similarity search
-4. **MCP Server**: Exposes `search_documentation` and `refresh_index` tools via HTTP for your LLM to use
+4. **MCP Server**: Exposes `search_documentation`, `refresh_index`, and `get_full_document` tools via HTTP for your LLM to use
 
 ### What is HNSWLib?
 
@@ -195,6 +195,30 @@ Returns relevant document chunks with similarity scores and sources.
 ```
 
 Syncs the index with S3. Use `force: true` to rebuild everything.
+
+### `get_full_document`
+
+```json
+{
+  "s3_key": "docs/authentification_magique_symfony.md"
+}
+```
+
+Retrieves the complete content of a Markdown file from S3 along with metadata:
+- **Full S3 key**: The document's S3 identifier
+- **Complete Markdown content**: Entire document (not chunked)
+- **Metadata**: Size in bytes, last modification date, ETag, chunk count (if indexed)
+
+**Use Cases:**
+- View the complete document after finding it via `search_documentation`
+- Export documentation for external use
+- Understand the full context around a search result
+- Display complete documents in third-party integrations
+
+**Important Notes:**
+- If a document appears in search results but `get_full_document` returns "not found", it means the file was deleted from S3 after being indexed
+- **Solution**: Run `refresh_index` to synchronize the index with the current S3 state
+- The tool will provide a helpful error message indicating when a sync is needed
 
 ## 🤝 Contributing
 
