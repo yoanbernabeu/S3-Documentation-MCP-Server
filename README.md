@@ -122,8 +122,9 @@ Restart your MCP client, and you should now see the `search_documentation`, `ref
 
 - 🔌 **Universal S3**: AWS S3, MinIO, Scaleway, DigitalOcean Spaces, Cloudflare R2, Wasabi...
 - 🧠 **Local RAG**: Ollama embeddings ([nomic-embed-text](https://ollama.com/library/nomic-embed-text)) - no API costs
-- 🔄 **Smart Sync**: Incremental updates via ETag comparison
+- 🔄 **Smart Sync**: Incremental updates via ETag comparison + automatic full sync on empty vector store
 - ⚡ **Fast Search**: HNSWLib vector index with cosine similarity
+- 🔐 **Optional Auth**: API key authentication for secure deployments
 - 🛠️ **3 MCP Tools**: `search_documentation`, `refresh_index`, and `get_full_document`
 
 ## How It Works
@@ -172,6 +173,77 @@ OLLAMA_BASE_URL=http://localhost:11434    # Ollama API endpoint
 ```
 
 See [`env.example`](env.example) for all available options and detailed documentation (RAG parameters, sync mode, chunk size, etc.).
+
+### Synchronization Modes
+
+The server supports three synchronization modes via `SYNC_MODE`:
+
+- **`startup`** (default): Syncs at server startup
+  - ✅ **Auto-detection**: If the vector store is empty, automatically performs a full sync
+  - ✅ Otherwise, performs an incremental sync (only changed files)
+  - ✅ No manual `refresh_index` needed after restart!
+  
+- **`periodic`**: Syncs at regular intervals (`SYNC_INTERVAL_MINUTES`)
+  - Runs incremental syncs automatically
+  
+- **`manual`**: No automatic sync
+  - You must call `refresh_index` tool manually
+
+> 💡 **Note**: The server automatically detects when the vector store is empty (e.g., after deleting `./data/` folder or first run) and triggers a full synchronization. You no longer need to manually run `refresh_index` after every restart!
+
+## 🔐 Security & Authentication
+
+### API Key Authentication (Optional)
+
+By default, the server runs in **open access mode** for easy local development. For shared or remote deployments, you can enable API key authentication:
+
+```bash
+# Enable authentication
+ENABLE_AUTH=true
+
+# Set your API key
+MCP_API_KEY=your-secret-key-here
+```
+
+When authentication is enabled:
+- ✅ All endpoints (except `/health`) require a valid API key
+- ✅ API key can be provided via:
+  - **Authorization header** (recommended): `Authorization: Bearer your-secret-key`
+  - **Query parameter**: `?api_key=your-secret-key`
+- ✅ Invalid or missing keys return HTTP 401 Unauthorized
+
+**Usage Examples:**
+
+```bash
+# With Authorization header (recommended)
+curl -H "Authorization: Bearer your-secret-key" http://localhost:3000/mcp
+
+# With query parameter
+curl "http://localhost:3000/mcp?api_key=your-secret-key"
+```
+
+**MCP Client Configuration with API Key:**
+
+```json
+{
+  "mcpServers": {
+    "doc": {
+      "type": "streamable-http",
+      "url": "http://127.0.0.1:3000/mcp",
+      "headers": {
+        "Authorization": "Bearer your-secret-key"
+      },
+      "note": "S3 Documentation RAG Server with authentication"
+    }
+  }
+}
+```
+
+> 💡 **Best Practices:**
+> - Keep authentication **disabled** for local development
+> - **Enable** it for shared networks or remote deployments
+> - Use strong, randomly generated keys (e.g., `openssl rand -hex 32`)
+> - The `/health` endpoint is always accessible without authentication for monitoring
 
 ## MCP Tools
 
