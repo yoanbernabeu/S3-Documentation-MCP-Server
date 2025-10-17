@@ -2,37 +2,19 @@
  * MCP server for S3 documentation
  */
 
-import express from 'express';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
-
-import { S3Loader } from './services/s3-loader.js';
-import { HNSWVectorStore } from './services/hnswlib-vector-store.js';
-import { SyncService } from './services/sync-service.js';
-
-import {
-  searchDocumentation,
-  searchDocumentationInputSchema,
-  searchDocumentationOutputSchema,
-  type SearchDocumentationInput,
-} from './tools/search-documentation.js';
-
-import {
-  refreshIndex,
-  refreshIndexInputSchema,
-  refreshIndexOutputSchema,
-  type RefreshIndexInput,
-} from './tools/refresh-index.js';
-
-import {
-  getFullDocument,
-  getFullDocumentInputSchema,
-  getFullDocumentOutputSchema,
-  type GetFullDocumentInput,
-} from './tools/get-full-document.js';
+import express from 'express';
+import { z } from 'zod';
 
 import { config, logger } from './config/index.js';
-import { z } from 'zod';
+import { authMiddleware } from './middleware/auth.js';
+import { HNSWVectorStore } from './services/hnswlib-vector-store.js';
+import { S3Loader } from './services/s3-loader.js';
+import { SyncService } from './services/sync-service.js';
+import { getFullDocument } from './tools/get-full-document.js';
+import { refreshIndex } from './tools/refresh-index.js';
+import { searchDocumentation } from './tools/search-documentation.js';
 
 export class S3DocMCPServer {
   private server: McpServer;
@@ -215,7 +197,16 @@ export class S3DocMCPServer {
       // Perform synchronization according to configuration
       if (config.sync.mode === 'startup') {
         logger.info('🔄 Startup synchronization enabled...');
-        await this.syncService.performSync('incremental');
+        
+        // Check if vector store is empty
+        const initialStats = await this.vectorStore.getStats();
+        if (initialStats.totalChunks === 0) {
+          logger.warn('⚠️  Vector store is empty - forcing full synchronization');
+          await this.syncService.performSync('full');
+        } else {
+          logger.info(`📊 Vector store contains ${initialStats.totalChunks} chunks - incremental sync`);
+          await this.syncService.performSync('incremental');
+        }
       }
 
       // If periodic mode, configure interval
@@ -223,9 +214,11 @@ export class S3DocMCPServer {
         const intervalMs = config.sync.intervalMinutes * 60 * 1000;
         logger.info(`⏰ Periodic synchronization enabled (every ${config.sync.intervalMinutes} minutes)`);
         
-        setInterval(async () => {
-          logger.info('🔄 Periodic synchronization...');
-          await this.syncService.performSync('incremental');
+        setInterval(() => {
+          void (async () => {
+            logger.info('🔄 Periodic synchronization...');
+            await this.syncService.performSync('incremental');
+          })();
         }, intervalMs);
       }
 
@@ -245,6 +238,9 @@ export class S3DocMCPServer {
     const app = express();
     app.use(express.json());
 
+    // Apply authentication middleware (if enabled)
+    app.use(authMiddleware);
+
     // Health endpoint
     app.get('/health', (req, res) => {
       res.json({ 
@@ -263,7 +259,7 @@ export class S3DocMCPServer {
         });
 
         res.on('close', () => {
-          transport.close();
+          void transport.close();
         });
 
         await this.server.connect(transport);
@@ -285,6 +281,14 @@ export class S3DocMCPServer {
         logger.success(`🎧 MCP server listening on http://${host}:${port}`);
         logger.info(`   MCP endpoint: http://${host}:${port}/mcp`);
         logger.info(`   Health check: http://${host}:${port}/health`);
+        
+        // Display authentication status
+        if (config.auth.enabled) {
+          logger.info(`   🔐 Authentication: ENABLED`);
+        } else {
+          logger.info(`   🔓 Authentication: DISABLED (open access)`);
+        }
+        
         resolve();
       });
     });

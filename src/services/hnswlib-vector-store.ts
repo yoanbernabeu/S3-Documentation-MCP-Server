@@ -23,6 +23,23 @@ interface HNSWLibWithDocstore {
   docstore?: HNSWLibDocstore;
 }
 
+// Type for docstore.json file structure
+interface DocstoreDocument {
+  pageContent: string;
+  metadata: {
+    id?: string;
+    key?: string;
+    etag?: string;
+    chunkIndex?: number;
+    totalChunks?: number;
+    source?: string;
+    indexedAt?: string;
+    [key: string]: unknown;
+  };
+}
+
+type DocstoreData = Array<[string, DocstoreDocument]>;
+
 export class HNSWVectorStore {
   private store?: HNSWLib;
   private embeddings: OllamaEmbeddings;
@@ -55,16 +72,23 @@ export class HNSWVectorStore {
   async initialize(): Promise<void> {
     try {
       const indexPath = `${this.storePath}/hnswlib.index`;
+      const docstorePath = `${this.storePath}/docstore.json`;
       
-      if (fs.existsSync(indexPath)) {
+      if (fs.existsSync(indexPath) && fs.existsSync(docstorePath)) {
         // Load from disk
         logger.info(`📂 Loading vector store from ${this.storePath}...`);
         this.store = await HNSWLib.load(this.storePath, this.embeddings);
         
-        // Rebuild key -> IDs index from metadata
-        await this.rebuildKeyIndex();
+        // Count documents from docstore.json file directly
+        // (can't rely on internal _docs after load - it's lazy loaded)
+        const docstoreContent = fs.readFileSync(docstorePath, 'utf-8');
+        const docstoreData = JSON.parse(docstoreContent) as DocstoreData;
+        const docCount = docstoreData.length;
         
-        logger.success(`✅ Vector store loaded: ${this.keyIndex.size} files, ${await this.getDocumentCount()} chunks`);
+        // Rebuild key -> IDs index from loaded docstore data
+        await this.rebuildKeyIndexFromFile(docstoreData);
+        
+        logger.success(`✅ Vector store loaded: ${this.keyIndex.size} files, ${docCount} chunks`);
       } else {
         // Create new store
         logger.info(`🆕 Creating new vector store...`);
@@ -80,7 +104,28 @@ export class HNSWVectorStore {
   }
 
   /**
-   * Rebuild key -> IDs index from store metadata
+   * Rebuild key -> IDs index from docstore file
+   */
+  private async rebuildKeyIndexFromFile(docstoreData: DocstoreData): Promise<void> {
+    this.keyIndex.clear();
+    
+    for (const [_docId, doc] of docstoreData) {
+      const key = doc.metadata.key as string | undefined;
+      const id = doc.metadata.id as string | undefined;
+      
+      if (key && id) {
+        if (!this.keyIndex.has(key)) {
+          this.keyIndex.set(key, []);
+        }
+        this.keyIndex.get(key)!.push(id);
+      }
+    }
+    
+    logger.info(`🗂️  Index rebuilt from file: ${this.keyIndex.size} unique files, ${docstoreData.length} chunks`);
+  }
+
+  /**
+   * Rebuild key -> IDs index from store metadata (legacy, not used after load)
    */
   private async rebuildKeyIndex(): Promise<void> {
     if (!this.store) return;
@@ -94,7 +139,14 @@ export class HNSWVectorStore {
       // We can access it via private property (not ideal but necessary)
       const docstore = (this.store as unknown as HNSWLibWithDocstore).docstore;
       
+      logger.info(`🔍 Attempting to rebuild index from docstore...`);
+      logger.info(`   Docstore exists: ${!!docstore}`);
+      logger.info(`   Docstore._docs exists: ${!!docstore?._docs}`);
+      
       if (docstore?._docs) {
+        const docCount = Object.keys(docstore._docs).length;
+        logger.info(`   Found ${docCount} documents in docstore`);
+        
         // Iterate through all documents in docstore
         for (const [_docId, doc] of Object.entries(docstore._docs)) {
           const key = doc.metadata.key as string | undefined;
@@ -108,12 +160,13 @@ export class HNSWVectorStore {
           }
         }
         
-        logger.debug(`🗂️  Index rebuilt: ${this.keyIndex.size} unique files`);
+        logger.info(`🗂️  Index rebuilt: ${this.keyIndex.size} unique files, ${docCount} chunks`);
       } else {
-        logger.warn(`⚠️  Unable to access docstore to rebuild index`);
+        logger.warn(`⚠️  Unable to access docstore to rebuild index - docstore is empty or undefined`);
+        logger.warn(`   This is normal on first run but should not happen after loading from disk`);
       }
     } catch (error) {
-      logger.warn(`⚠️  Unable to rebuild index:`, error);
+      logger.error(`❌ Error while rebuilding index:`, error);
       // Not critical, index will be rebuilt gradually
     }
   }
@@ -327,33 +380,50 @@ export class HNSWVectorStore {
    * Save vector store to disk
    */
   async save(): Promise<void> {
-    if (!this.store) return;
-    
-    // Check if store has documents before saving
-    // An empty store without any documents added cannot be saved
-    const docCount = await this.getDocumentCount();
-    if (docCount === 0) {
-      logger.debug(`⏭️  Skipping save: vector store is empty`);
+    if (!this.store) {
+      logger.warn(`⚠️  Cannot save: vector store not initialized`);
       return;
     }
     
-    // Create directory if necessary
-    const dir = this.storePath.substring(0, this.storePath.lastIndexOf('/'));
-    if (!fs.existsSync(dir)) {
-      fs.mkdirSync(dir, { recursive: true });
+    try {
+      // Create directory if necessary
+      const dir = this.storePath.substring(0, this.storePath.lastIndexOf('/'));
+      if (!fs.existsSync(dir)) {
+        fs.mkdirSync(dir, { recursive: true });
+      }
+      
+      logger.info(`💾 Saving vector store to ${this.storePath}...`);
+      await this.store.save(this.storePath);
+      logger.success(`✅ Vector store saved successfully: ${this.storePath}`);
+      
+      // Verify the files were created
+      const indexPath = `${this.storePath}/hnswlib.index`;
+      if (fs.existsSync(indexPath)) {
+        const stats = fs.statSync(indexPath);
+        logger.info(`   📊 Index file: ${(stats.size / 1024).toFixed(2)} KB`);
+      } else {
+        logger.error(`❌ ERROR: Index file was not created at ${indexPath}`);
+      }
+    } catch (error) {
+      logger.error(`❌ Failed to save vector store to ${this.storePath}:`, error);
+      // Don't rethrow - allow server to continue even if save fails
+      logger.warn(`⚠️  Server will continue but vector store will not persist`);
     }
-    
-    await this.store.save(this.storePath);
-    logger.debug(`💾 Vector store saved: ${this.storePath}`);
   }
 
   /**
    * Get vector store statistics
    */
   async getStats() {
+    // Count total chunks from keyIndex (more reliable than getDocumentCount)
+    let totalChunks = 0;
+    for (const ids of this.keyIndex.values()) {
+      totalChunks += ids.length;
+    }
+    
     return {
       uniqueFiles: this.keyIndex.size,
-      totalChunks: await this.getDocumentCount(),
+      totalChunks,
       storePath: this.storePath,
     };
   }

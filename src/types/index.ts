@@ -47,6 +47,12 @@ export interface Config {
     host: string;
     logLevel: 'debug' | 'info' | 'warn' | 'error';
   };
+  
+  // Authentication
+  auth: {
+    enabled: boolean;
+    apiKey: string;
+  };
 }
 
 // S3 Document

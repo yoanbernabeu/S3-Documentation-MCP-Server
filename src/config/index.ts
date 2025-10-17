@@ -59,6 +59,11 @@ export const config: Config = {
     host: getEnvVar('HOST', '0.0.0.0'),
     logLevel: (getEnvVar('LOG_LEVEL', 'info') as 'debug' | 'info' | 'warn' | 'error'),
   },
+  
+  auth: {
+    enabled: getEnvVar('ENABLE_AUTH', 'false') === 'true',
+    apiKey: process.env.MCP_API_KEY ?? '',
+  },
 };
 
 // Simple logger
