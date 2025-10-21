@@ -32,6 +32,7 @@
     "@aws-sdk/client-s3": "^3.705.0",
     "@langchain/community": "^0.3.18",
     "@langchain/core": "^0.3.24",
+    "@langchain/openai": "^0.3.17",
     "@langchain/textsplitters": "^0.1.0",
     "@modelcontextprotocol/sdk": "^1.0.4",
     "dotenv": "^16.4.7",

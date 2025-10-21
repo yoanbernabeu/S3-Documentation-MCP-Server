@@ -15,10 +15,17 @@ export interface Config {
     forcePathStyle?: boolean; // Required for MinIO and some S3-compatible services
   };
   
-  // Ollama
-  ollama: {
-    baseUrl: string;
-    embeddingModel: string;
+  // Embeddings
+  embeddings: {
+    provider: 'ollama' | 'openai';
+    ollama?: {
+      baseUrl: string;
+      model: string;
+    };
+    openai?: {
+      apiKey: string;
+      model: string;
+    };
   };
   
   // RAG
@@ -139,5 +146,32 @@ export interface DocumentToIndex {
     totalChunks: number;
     source: string;
   };
+}
+
+// Embedding Provider Interface
+export interface EmbeddingProvider {
+  /**
+   * Generate embeddings for a list of texts
+   * @param texts - Array of texts to embed
+   * @returns Array of embeddings (each embedding is an array of numbers)
+   */
+  embedDocuments(texts: string[]): Promise<number[][]>;
+  
+  /**
+   * Generate embedding for a single query text
+   * @param text - Text to embed
+   * @returns Embedding as an array of numbers
+   */
+  embedQuery(text: string): Promise<number[]>;
+  
+  /**
+   * Get the name of the provider
+   */
+  getProviderName(): string;
+  
+  /**
+   * Get the model being used
+   */
+  getModelName(): string;
 }
 

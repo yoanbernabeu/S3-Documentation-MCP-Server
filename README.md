@@ -9,7 +9,7 @@ A lightweight **[Model Context Protocol (MCP)](https://modelcontextprotocol.io)*
 
 **Built for simplicity:**
 - 🪶 **Lightweight Stack**: No heavy dependencies or cloud services
-- 🏠 **Fully Local**: [Ollama](https://ollama.ai) for embeddings (no API costs, no rate limits)
+- 🏠 **Flexible Embeddings**: Choose between [Ollama](https://ollama.ai) (local, free) or [OpenAI](https://openai.com) (cloud, high-accuracy)
 - 💾 **File-based Storage**: Vector indices stored as simple files (HNSWLib)
 - 🔌 **S3-Compatible**: Works with any S3-compatible storage (AWS, MinIO, Scaleway, Cloudflare R2...)
 
@@ -20,7 +20,9 @@ A lightweight **[Model Context Protocol (MCP)](https://modelcontextprotocol.io)*
 
 ## Requirements
 
-- **[Ollama](https://ollama.ai)** installed and running with the `nomic-embed-text` model
+- **Embedding Provider** (choose one):
+  - **[Ollama](https://ollama.ai)** (recommended for local/offline use) with the `nomic-embed-text` model
+  - **[OpenAI API Key](https://platform.openai.com/api-keys)** (for cloud-based embeddings)
 - **Node.js >= 18** (if running from source) **OR** **Docker** (recommended)
 - **S3-compatible storage** (AWS S3, MinIO, Scaleway, Cloudflare R2, etc.)
 
@@ -121,7 +123,9 @@ Restart your MCP client, and you should now see the `search_documentation`, `ref
 ## Features
 
 - 🔌 **Universal S3**: AWS S3, MinIO, Scaleway, DigitalOcean Spaces, Cloudflare R2, Wasabi...
-- 🧠 **Local RAG**: Ollama embeddings ([nomic-embed-text](https://ollama.com/library/nomic-embed-text)) - no API costs
+- 🧠 **Flexible Embeddings**: 
+  - **Ollama** ([nomic-embed-text](https://ollama.com/library/nomic-embed-text)) - Local, free, offline-capable
+  - **OpenAI** (`text-embedding-3-small`, `text-embedding-3-large`) - Cloud-based, high-accuracy, multilingual
 - 🔄 **Smart Sync**: Incremental updates via ETag comparison + automatic full sync on empty vector store
 - ⚡ **Fast Search**: HNSWLib vector index with cosine similarity
 - 🔐 **Optional Auth**: API key authentication for secure deployments
@@ -135,7 +139,9 @@ The server follows a simple pipeline:
 2. **SyncService**: Detects new, modified, or deleted files and performs incremental synchronization (no unnecessary reprocessing)
 3. **VectorStore**: 
    - Splits documents into chunks (1000 characters by default)
-   - Generates embeddings using Ollama's [`nomic-embed-text`](https://ollama.com/library/nomic-embed-text) model (running locally)
+   - Generates embeddings using your chosen provider:
+     - **Ollama**: [`nomic-embed-text`](https://ollama.com/library/nomic-embed-text) (local, free)
+     - **OpenAI**: `text-embedding-3-small` or `text-embedding-3-large` (cloud, high-accuracy)
    - Indexes vectors using **HNSWLib** for fast similarity search
 4. **MCP Server**: Exposes `search_documentation`, `refresh_index`, and `get_full_document` tools via HTTP for your LLM to use
 
@@ -168,11 +174,82 @@ S3_SECRET_ACCESS_KEY=your-secret-key      # S3 secret key
 S3_REGION=us-east-1                       # S3 region
 S3_ENDPOINT=                              # Optional: for non-AWS S3 (MinIO, Scaleway, etc.)
 
-# Ollama Configuration
+# Embeddings Provider (choose one)
+EMBEDDING_PROVIDER=ollama                 # ollama (default) or openai
+
+# Option 1: Ollama (Local)
 OLLAMA_BASE_URL=http://localhost:11434    # Ollama API endpoint
+OLLAMA_EMBEDDING_MODEL=nomic-embed-text   # Ollama embedding model
+
+# Option 2: OpenAI (Cloud) - Only if EMBEDDING_PROVIDER=openai
+OPENAI_API_KEY=                           # Your OpenAI API key
+OPENAI_EMBEDDING_MODEL=text-embedding-3-small  # or text-embedding-3-large
 ```
 
 See [`env.example`](env.example) for all available options and detailed documentation (RAG parameters, sync mode, chunk size, etc.).
+
+### Embedding Providers
+
+The server supports two embedding providers:
+
+#### 🏠 Ollama (Local) - Default
+
+**Pros:**
+- ✅ **Free**: No API costs, unlimited usage
+- ✅ **Private**: All data stays on your machine
+- ✅ **Offline**: Works without internet connection
+- ✅ **Fast**: Direct local API calls
+
+**Cons:**
+- ⚠️ Requires Ollama installation and model download
+- ⚠️ Uses local CPU/GPU resources
+
+**Setup:**
+```bash
+# Install Ollama from https://ollama.ai
+ollama pull nomic-embed-text
+
+# Configure
+EMBEDDING_PROVIDER=ollama
+OLLAMA_BASE_URL=http://localhost:11434
+OLLAMA_EMBEDDING_MODEL=nomic-embed-text
+```
+
+#### ☁️ OpenAI (Cloud)
+
+**Pros:**
+- ✅ **High Accuracy**: State-of-the-art embeddings
+- ✅ **Multilingual**: Excellent support for 20+ languages
+- ✅ **No Local Resources**: Runs entirely in the cloud
+- ✅ **Lower Latency**: Fast API responses
+
+**Cons:**
+- ⚠️ Requires API key and credits
+- ⚠️ Data sent to OpenAI servers
+- ⚠️ Cost per token (very affordable: ~$0.00002/1K tokens for `text-embedding-3-small`)
+
+**Setup:**
+```bash
+# Get an API key from https://platform.openai.com/api-keys
+
+# Configure
+EMBEDDING_PROVIDER=openai
+OPENAI_API_KEY=sk-...your-key...
+OPENAI_EMBEDDING_MODEL=text-embedding-3-small  # or text-embedding-3-large
+```
+
+**Model Comparison:**
+
+| Model | Dimensions | Performance | Cost | Best For |
+|-------|------------|-------------|------|----------|
+| `text-embedding-3-small` | 1536 | High | Low | General purpose, cost-sensitive |
+| `text-embedding-3-large` | 3072 | Higher | Medium | Maximum accuracy, multilingual |
+
+> 💡 **Tip**: Start with `text-embedding-3-small` for most use cases. Only switch to `text-embedding-3-large` if you need the absolute best accuracy or work extensively with non-English content.
+
+**Fallback Behavior:**
+
+If you set `EMBEDDING_PROVIDER=openai` but don't provide a valid `OPENAI_API_KEY`, the server will automatically fall back to Ollama (if configured). This ensures the server can always start, even with incomplete configuration.
 
 ### Synchronization Modes
 

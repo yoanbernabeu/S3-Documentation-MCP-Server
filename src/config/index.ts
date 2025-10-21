@@ -20,6 +20,32 @@ function getEnvNumber(name: string, defaultValue: number): number {
   return value ? parseInt(value, 10) : defaultValue;
 }
 
+// Build embeddings configuration
+function buildEmbeddingsConfig() {
+  const provider = getEnvVar('EMBEDDING_PROVIDER', 'ollama') as 'ollama' | 'openai';
+  
+  const config: Config['embeddings'] = {
+    provider,
+  };
+  
+  // Always include Ollama config as fallback
+  config.ollama = {
+    baseUrl: getEnvVar('OLLAMA_BASE_URL', 'http://localhost:11434'),
+    model: getEnvVar('OLLAMA_EMBEDDING_MODEL', 'nomic-embed-text'),
+  };
+  
+  // Include OpenAI config if provider is OpenAI or if API key is set
+  const openaiApiKey = process.env.OPENAI_API_KEY;
+  if (provider === 'openai' || openaiApiKey) {
+    config.openai = {
+      apiKey: openaiApiKey ?? '',
+      model: getEnvVar('OPENAI_EMBEDDING_MODEL', 'text-embedding-3-small'),
+    };
+  }
+  
+  return config;
+}
+
 // Global configuration
 export const config: Config = {
   s3: {
@@ -32,10 +58,7 @@ export const config: Config = {
     forcePathStyle: getEnvVar('S3_FORCE_PATH_STYLE', 'false') === 'true',
   },
   
-  ollama: {
-    baseUrl: getEnvVar('OLLAMA_BASE_URL', 'http://localhost:11434'),
-    embeddingModel: getEnvVar('OLLAMA_EMBEDDING_MODEL', 'nomic-embed-text'),
-  },
+  embeddings: buildEmbeddingsConfig(),
   
   rag: {
     chunkSize: getEnvNumber('CHUNK_SIZE', 1000),
