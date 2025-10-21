@@ -3,7 +3,7 @@ services:
     build: .
     container_name: s3-doc-mcp
     ports:
-      - "3031:3000"
+      - "3000:3000"
     environment:
       # S3 Configuration
       - S3_ENDPOINT=${S3_ENDPOINT}

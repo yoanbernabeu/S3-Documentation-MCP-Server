@@ -5,14 +5,15 @@
 import { randomUUID } from 'crypto';
 import * as fs from 'fs';
 
-import { OllamaEmbeddings } from '@langchain/community/embeddings/ollama';
 import { HNSWLib } from '@langchain/community/vectorstores/hnswlib';
 import { Document } from '@langchain/core/documents';
+import { Embeddings } from '@langchain/core/embeddings';
 import { RecursiveCharacterTextSplitter } from '@langchain/textsplitters';
 
-
 import { config, logger } from '../config/index.js';
-import type { SearchResult, DocumentToIndex } from '../types/index.js';
+import type { SearchResult, DocumentToIndex, EmbeddingProvider } from '../types/index.js';
+
+import { createEmbeddingProvider } from './embeddings/index.js';
 
 // Internal types for HNSWLib docstore access
 interface HNSWLibDocstore {
@@ -40,21 +41,37 @@ interface DocstoreDocument {
 
 type DocstoreData = Array<[string, DocstoreDocument]>;
 
+/**
+ * Adapter to convert EmbeddingProvider to LangChain Embeddings interface
+ */
+class EmbeddingProviderAdapter extends Embeddings {
+  constructor(private provider: EmbeddingProvider) {
+    super({});
+  }
+
+  async embedDocuments(texts: string[]): Promise<number[][]> {
+    return this.provider.embedDocuments(texts);
+  }
+
+  async embedQuery(text: string): Promise<number[]> {
+    return this.provider.embedQuery(text);
+  }
+}
+
 export class HNSWVectorStore {
   private store?: HNSWLib;
-  private embeddings: OllamaEmbeddings;
+  private embeddingProvider: EmbeddingProvider;
+  private embeddingsAdapter: Embeddings;
   private textSplitter: RecursiveCharacterTextSplitter;
   private storePath: string;
   private keyIndex: Map<string, string[]> = new Map(); // S3 key -> doc IDs
 
-  constructor(storePath?: string) {
+  constructor(storePath?: string, embeddingProvider?: EmbeddingProvider) {
     this.storePath = storePath ?? config.vectorStore.path;
     
-    // Configure Ollama embeddings
-    this.embeddings = new OllamaEmbeddings({
-      model: config.ollama.embeddingModel,
-      baseUrl: config.ollama.baseUrl,
-    });
+    // Use provided embedding provider or create from config
+    this.embeddingProvider = embeddingProvider ?? createEmbeddingProvider(config);
+    this.embeddingsAdapter = new EmbeddingProviderAdapter(this.embeddingProvider);
     
     // Configure text splitter
     this.textSplitter = new RecursiveCharacterTextSplitter({
@@ -63,7 +80,10 @@ export class HNSWVectorStore {
       separators: ['\n\n', '\n', '. ', ' ', ''],
     });
     
-    logger.info(`HNSWVectorStore configured: ${this.storePath}`);
+    logger.info(`🗄️  HNSWVectorStore configured`);
+    logger.info(`   Store path: ${this.storePath}`);
+    logger.info(`   Embedding provider: ${this.embeddingProvider.getProviderName()}`);
+    logger.info(`   Embedding model: ${this.embeddingProvider.getModelName()}`);
   }
 
   /**
@@ -77,7 +97,7 @@ export class HNSWVectorStore {
       if (fs.existsSync(indexPath) && fs.existsSync(docstorePath)) {
         // Load from disk
         logger.info(`📂 Loading vector store from ${this.storePath}...`);
-        this.store = await HNSWLib.load(this.storePath, this.embeddings);
+        this.store = await HNSWLib.load(this.storePath, this.embeddingsAdapter);
         
         // Count documents from docstore.json file directly
         // (can't rely on internal _docs after load - it's lazy loaded)
@@ -92,13 +112,13 @@ export class HNSWVectorStore {
       } else {
         // Create new store
         logger.info(`🆕 Creating new vector store...`);
-        this.store = new HNSWLib(this.embeddings, { space: 'cosine' });
+        this.store = new HNSWLib(this.embeddingsAdapter, { space: 'cosine' });
         logger.success(`✅ New vector store created`);
       }
     } catch (error) {
       logger.error(`Error initializing vector store:`, error);
       // In case of error, create a new store
-      this.store = new HNSWLib(this.embeddings, { space: 'cosine' });
+      this.store = new HNSWLib(this.embeddingsAdapter, { space: 'cosine' });
       logger.warn(`⚠️  New vector store created after error`);
     }
   }
@@ -223,7 +243,7 @@ export class HNSWVectorStore {
     logger.info(`🗑️  Clearing all documents from vector store...`);
     
     // Create a new empty store
-    this.store = new HNSWLib(this.embeddings, { space: 'cosine' });
+    this.store = new HNSWLib(this.embeddingsAdapter, { space: 'cosine' });
     this.keyIndex.clear();
     
     logger.success(`✅ Vector store cleared`);
@@ -260,7 +280,7 @@ export class HNSWVectorStore {
     }
 
     // Recreate the store
-    this.store = new HNSWLib(this.embeddings, { space: 'cosine' });
+    this.store = new HNSWLib(this.embeddingsAdapter, { space: 'cosine' });
     if (keptDocs.length > 0) {
       await this.store.addDocuments(keptDocs);
     }
@@ -289,8 +309,8 @@ export class HNSWVectorStore {
     
     logger.debug(`🔍 Search: "${query.substring(0, 50)}..." (top ${maxResults})`);
 
-    // Vectorize query with Ollama
-    logger.debug(`🧮 Vectorizing query via Ollama (${config.ollama.embeddingModel})...`);
+    // Vectorize query with configured embedding provider
+    logger.debug(`🧮 Vectorizing query via ${this.embeddingProvider.getProviderName()} (${this.embeddingProvider.getModelName()})...`);
     const startEmbedding = Date.now();
     
     const results = await this.store!.similaritySearchWithScore(query, maxResults);
