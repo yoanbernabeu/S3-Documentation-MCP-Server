@@ -432,6 +432,107 @@ describe('SyncService', () => {
     });
   });
 
+  describe('getIndexedFiles', () => {
+    it('should return empty array when no documents are indexed', () => {
+      const files = syncService.getIndexedFiles();
+
+      expect(files).toEqual([]);
+    });
+
+    it('should return only indexed documents', () => {
+      // Create service with indexed documents
+      vi.spyOn(fs, 'existsSync').mockReturnValue(true);
+      vi.spyOn(fs, 'readFileSync').mockReturnValue(
+        JSON.stringify({
+          lastSyncDate: '2024-01-01T00:00:00.000Z',
+          documents: {
+            'doc1.md': {
+              key: 'doc1.md',
+              etag: 'etag1',
+              lastModified: '2024-01-01T00:00:00.000Z',
+              chunkCount: 3,
+              status: 'indexed',
+            },
+            'doc2.md': {
+              key: 'doc2.md',
+              etag: 'etag2',
+              lastModified: '2024-01-02T00:00:00.000Z',
+              chunkCount: 5,
+              status: 'indexed',
+            },
+            'doc3.md': {
+              key: 'doc3.md',
+              etag: 'etag3',
+              lastModified: '2024-01-03T00:00:00.000Z',
+              chunkCount: 2,
+              status: 'error',
+            },
+          },
+          version: '1.0',
+        })
+      );
+
+      syncService = new SyncService(mockS3Loader, mockVectorStore);
+      const files = syncService.getIndexedFiles();
+
+      expect(files).toHaveLength(2);
+      expect(files[0]).toEqual({
+        key: 'doc1.md',
+        etag: 'etag1',
+        lastModified: '2024-01-01T00:00:00.000Z',
+        chunkCount: 3,
+        size: 0,
+      });
+      expect(files[1]).toEqual({
+        key: 'doc2.md',
+        etag: 'etag2',
+        lastModified: '2024-01-02T00:00:00.000Z',
+        chunkCount: 5,
+        size: 0,
+      });
+    });
+
+    it('should filter out non-indexed documents', () => {
+      // Create service with mixed status documents
+      vi.spyOn(fs, 'existsSync').mockReturnValue(true);
+      vi.spyOn(fs, 'readFileSync').mockReturnValue(
+        JSON.stringify({
+          lastSyncDate: '2024-01-01T00:00:00.000Z',
+          documents: {
+            'indexed.md': {
+              key: 'indexed.md',
+              etag: 'etag1',
+              lastModified: '2024-01-01T00:00:00.000Z',
+              chunkCount: 3,
+              status: 'indexed',
+            },
+            'deleted.md': {
+              key: 'deleted.md',
+              etag: 'etag2',
+              lastModified: '2024-01-02T00:00:00.000Z',
+              chunkCount: 2,
+              status: 'deleted',
+            },
+            'error.md': {
+              key: 'error.md',
+              etag: 'etag3',
+              lastModified: '2024-01-03T00:00:00.000Z',
+              chunkCount: 1,
+              status: 'error',
+            },
+          },
+          version: '1.0',
+        })
+      );
+
+      syncService = new SyncService(mockS3Loader, mockVectorStore);
+      const files = syncService.getIndexedFiles();
+
+      expect(files).toHaveLength(1);
+      expect(files[0].key).toBe('indexed.md');
+    });
+  });
+
   describe('getStats', () => {
     it('should return sync statistics', () => {
       const stats = syncService.getStats();

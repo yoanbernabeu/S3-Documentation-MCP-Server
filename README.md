@@ -116,7 +116,9 @@ Edit your Claude Desktop configuration file:
 }
 ```
 
-Restart your MCP client, and you should now see the `search_documentation`, `refresh_index`, and `get_full_document` tools available.
+Restart your MCP client, and you should now see:
+- **3 MCP Tools**: `search_documentation`, `refresh_index`, `get_full_document`
+- **MCP Resources**: Full list of indexed documentation files with direct access
 
 > 💡 **Tip**: If using Docker, make sure the port mapping matches your configuration (default is `3000:3000`)
 
@@ -130,6 +132,7 @@ Restart your MCP client, and you should now see the `search_documentation`, `ref
 - ⚡ **Fast Search**: HNSWLib vector index with cosine similarity
 - 🔐 **Optional Auth**: API key authentication for secure deployments
 - 🛠️ **3 MCP Tools**: `search_documentation`, `refresh_index`, and `get_full_document`
+- 📚 **MCP Resources**: Native support for discovering and reading indexed files via standard MCP Resources API
 
 ## How It Works
 
@@ -143,7 +146,9 @@ The server follows a simple pipeline:
      - **Ollama**: [`nomic-embed-text`](https://ollama.com/library/nomic-embed-text) (local, free)
      - **OpenAI**: `text-embedding-3-small` or `text-embedding-3-large` (cloud, high-accuracy)
    - Indexes vectors using **HNSWLib** for fast similarity search
-4. **MCP Server**: Exposes `search_documentation`, `refresh_index`, and `get_full_document` tools via HTTP for your LLM to use
+4. **MCP Server**: Exposes both **Tools** and **Resources** via HTTP:
+   - **Tools**: `search_documentation`, `refresh_index`, `get_full_document` for semantic search and actions
+   - **Resources**: `resources/list`, `resources/read` for file discovery and direct access
 
 ### What is HNSWLib?
 
@@ -368,6 +373,15 @@ Retrieves the complete content of a Markdown file from S3 along with metadata:
 - If a document appears in search results but `get_full_document` returns "not found", it means the file was deleted from S3 after being indexed
 - **Solution**: Run `refresh_index` to synchronize the index with the current S3 state
 - The tool will provide a helpful error message indicating when a sync is needed
+
+## MCP Resources
+
+In addition to the 3 tools, the server implements [MCP Resources](https://modelcontextprotocol.io/specification/draft/server/resources) for file discovery and direct access:
+
+- **`resources/list`**: Lists all indexed Markdown files with metadata (name, URI, size, chunks, last modified)
+- **`resources/read`**: Reads the full content of a specific file by its URI (e.g., `s3doc://docs/authentication.md`)
+
+**Use case:** When users ask "What files do you have?" or "Show me file X", the LLM can browse and access files directly without semantic search.
 
 ## 🤝 Contributing
 
