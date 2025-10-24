@@ -4,12 +4,17 @@
 
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
+import {
+  ListResourcesRequestSchema,
+  ReadResourceRequestSchema
+} from '@modelcontextprotocol/sdk/types.js';
 import express from 'express';
 import { z } from 'zod';
 
 import { config, logger } from './config/index.js';
 import { authMiddleware } from './middleware/auth.js';
 import { HNSWVectorStore } from './services/hnswlib-vector-store.js';
+import { ResourceService } from './services/resource-service.js';
 import { S3Loader } from './services/s3-loader.js';
 import { SyncService } from './services/sync-service.js';
 import { getFullDocument } from './tools/get-full-document.js';
@@ -21,21 +26,35 @@ export class S3DocMCPServer {
   private s3Loader: S3Loader;
   private vectorStore: HNSWVectorStore;
   private syncService: SyncService;
+  private resourceService: ResourceService;
 
   constructor() {
     // Create the MCP server with modern API
-    this.server = new McpServer({
-      name: 's3-doc-mcp',
-      version: '1.0.0',
-    });
+    this.server = new McpServer(
+      {
+        name: 's3-doc-mcp',
+        version: '1.0.0',
+      },
+      {
+        capabilities: {
+          resources: {
+            listChanged: true,
+          },
+        },
+      }
+    );
 
     // Initialize services
     this.s3Loader = new S3Loader();
     this.vectorStore = new HNSWVectorStore();
     this.syncService = new SyncService(this.s3Loader, this.vectorStore);
+    this.resourceService = new ResourceService(this.s3Loader, this.syncService);
 
     // Register tools
     this.registerTools();
+    
+    // Register resources
+    this.registerResources();
 
     logger.info('S3 Documentation MCP Server initialized');
   }
@@ -185,6 +204,34 @@ export class S3DocMCPServer {
   }
 
   /**
+   * Register MCP resources handlers
+   */
+  private registerResources(): void {
+    // Use the underlying Server instance for lower-level request handlers
+    const underlyingServer = this.server.server;
+
+    // Handler for resources/list - returns list of indexed files
+    underlyingServer.setRequestHandler(
+      ListResourcesRequestSchema,
+      async () => {
+        const resources = await this.resourceService.listResources();
+        return { resources };
+      }
+    );
+
+    // Handler for resources/read - reads file content
+    underlyingServer.setRequestHandler(
+      ReadResourceRequestSchema,
+      async (request) => {
+        const content = await this.resourceService.readResource(request.params.uri);
+        return { contents: [content] };
+      }
+    );
+
+    logger.info('MCP resources handlers registered');
+  }
+
+  /**
    * Initialize the server (load vector store and perform initial sync)
    */
   async initialize(): Promise<void> {
@@ -207,6 +254,9 @@ export class S3DocMCPServer {
           logger.info(`📊 Vector store contains ${initialStats.totalChunks} chunks - incremental sync`);
           await this.syncService.performSync('incremental');
         }
+        
+        // Notify clients that resource list has changed
+        this.notifyResourceListChanged();
       }
 
       // If periodic mode, configure interval
@@ -218,6 +268,9 @@ export class S3DocMCPServer {
           void (async () => {
             logger.info('🔄 Periodic synchronization...');
             await this.syncService.performSync('incremental');
+            
+            // Notify clients that resource list has changed
+            this.notifyResourceListChanged();
           })();
         }, intervalMs);
       }
@@ -228,6 +281,18 @@ export class S3DocMCPServer {
     } catch (error) {
       logger.error('❌ Error during initialization:', error);
       throw error;
+    }
+  }
+
+  /**
+   * Notify clients that the resource list has changed
+   */
+  private notifyResourceListChanged(): void {
+    try {
+      this.server.sendResourceListChanged();
+      logger.debug('📢 Resource list changed notification sent');
+    } catch (error) {
+      logger.error('Error sending resource list changed notification:', error);
     }
   }
 

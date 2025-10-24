@@ -311,5 +311,26 @@ export class SyncService {
   getDocumentInfo(key: string): SyncState['documents'][string] | null {
     return this.syncState.documents[key] ?? null;
   }
+
+  /**
+   * Get list of indexed files with metadata (for MCP Resources)
+   */
+  getIndexedFiles(): Array<{
+    key: string;
+    chunkCount: number;
+    lastModified: string;
+    etag: string;
+    size?: number;
+  }> {
+    return Object.entries(this.syncState.documents)
+      .filter(([_, doc]) => doc.status === 'indexed')
+      .map(([key, doc]) => ({
+        key,
+        chunkCount: doc.chunkCount,
+        lastModified: doc.lastModified,
+        etag: doc.etag,
+        size: 0, // Size info will be added if available from S3
+      }));
+  }
 }
 
