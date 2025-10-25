@@ -1,0 +1,257 @@
+---
+title: Synchronization Modes
+description: Configure when and how your documentation index is synchronized with S3
+---
+
+The S3 Documentation MCP server supports three synchronization modes to control when your vector index is updated with changes from S3.
+
+## Quick Reference
+
+| Mode | When It Syncs | Best For |
+|------|---------------|----------|
+| **startup** (default) | At server startup | Most use cases |
+| **periodic** | At regular intervals | Frequently updated docs |
+| **manual** | Only when you trigger it | Full control, debugging |
+
+## Sync Modes
+
+### startup (Default)
+
+Synchronizes the index when the server starts.
+
+```bash
+SYNC_MODE=startup
+```
+
+**Behavior:**
+- ✅ Syncs automatically on server start
+- ✅ Smart detection: Full sync if index is empty, incremental otherwise
+- ✅ No manual intervention needed after restart
+- ✅ Uses ETag comparison for efficient updates
+
+**Best for:**
+- Most production deployments
+- Development environments
+- Infrequently updated documentation
+
+**Example Use Case:** Your documentation is updated a few times per week, and you restart the server or redeploy after each update.
+
+### periodic
+
+Synchronizes the index at regular intervals while the server is running.
+
+```bash
+SYNC_MODE=periodic
+SYNC_INTERVAL_MINUTES=60  # Sync every hour
+```
+
+**Behavior:**
+- ✅ Initial sync on startup (same as startup mode)
+- ✅ Automatic syncs every N minutes
+- ✅ Always uses incremental sync (only changed files)
+- ✅ Non-blocking: searches work during sync
+
+**Best for:**
+- Frequently updated documentation
+- Long-running servers
+- Environments where documentation changes without server restarts
+
+**Example Use Case:** Your documentation is continuously updated by a CI/CD pipeline, and you want the index to stay fresh without restarting the server.
+
+**Configuration:**
+```bash
+SYNC_MODE=periodic
+SYNC_INTERVAL_MINUTES=30  # Sync every 30 minutes
+```
+
+Recommended intervals:
+- **30 minutes**: Frequently updated docs
+- **60 minutes**: Moderately updated docs (default)
+- **120+ minutes**: Slowly updated docs
+
+### manual
+
+No automatic synchronization. You control when syncs happen.
+
+```bash
+SYNC_MODE=manual
+```
+
+**Behavior:**
+- ❌ No automatic syncs
+- ✅ Use the `refresh_index` MCP tool to trigger syncs
+- ✅ Full control over timing
+- ✅ Useful for debugging and testing
+
+**Best for:**
+- Development and debugging
+- Testing vector store behavior
+- Environments with strict control requirements
+
+**Example Use Case:** You're testing the indexing behavior and want to control exactly when updates happen.
+
+**Triggering Manual Sync:**
+
+Use the `refresh_index` MCP tool from your client:
+
+```json
+{
+  "force": false  // false = incremental, true = full reindex
+}
+```
+
+## Incremental vs Full Sync
+
+### Incremental Sync (Default)
+
+Only processes changed files by comparing ETags:
+
+- ✅ **Fast**: Only reprocesses modified/new/deleted files
+- ✅ **Efficient**: Minimal S3 API calls
+- ✅ **Smart**: Automatically detects changes via ETag comparison
+
+**When it happens:**
+- Regular syncs in `startup` and `periodic` modes
+- `refresh_index` with `force: false`
+
+### Full Sync (Manual)
+
+Reprocesses all files from scratch:
+
+- 🔄 **Complete rebuild**: Deletes old index and rebuilds from scratch
+- ⚠️ **Slower**: Processes every file in the bucket
+- ✅ **Fresh start**: Useful after configuration changes
+
+**When to use:**
+- After changing embedding providers (Ollama ↔ OpenAI)
+- After modifying chunk size or overlap settings
+- When you suspect index corruption
+
+**Triggering Full Sync:**
+
+```json
+{
+  "force": true
+}
+```
+
+## Auto-Detection on Startup
+
+The server automatically detects if the vector store is empty and performs a full sync:
+
+```bash
+# After deleting the index
+rm -rf ./data/hnswlib-store
+
+# Server automatically rebuilds on next start
+npm start  # or docker-compose restart
+```
+
+You **no longer need** to manually call `refresh_index` after:
+- First installation
+- Deleting the index
+- Switching between embedding providers
+
+## Configuration Examples
+
+### Production - Infrequent Updates
+
+```bash
+SYNC_MODE=startup
+```
+
+Sync once at startup. Restart after documentation updates.
+
+### Production - Frequent Updates
+
+```bash
+SYNC_MODE=periodic
+SYNC_INTERVAL_MINUTES=30
+```
+
+Sync every 30 minutes to keep index fresh.
+
+### Development
+
+```bash
+SYNC_MODE=manual
+```
+
+Full control for testing and debugging.
+
+## Monitoring Syncs
+
+### Logs
+
+The server logs detailed sync information:
+
+```
+[INFO] Starting incremental sync...
+[INFO] Scanned 523 files in S3
+[INFO] Changes detected: 3 new, 2 modified, 1 deleted
+[INFO] Sync completed in 12.3s
+```
+
+### Health Endpoint
+
+Check the `/health` endpoint for index status:
+
+```bash
+curl http://localhost:3000/health
+```
+
+Response includes:
+- Total documents indexed
+- Last sync time
+- Vector store status
+
+## Best Practices
+
+### For Most Users
+- Use `startup` mode (default)
+- Restart server after documentation updates
+- Let auto-detection handle empty indexes
+
+### For Frequently Updated Docs
+- Use `periodic` mode
+- Set interval based on update frequency
+- Monitor logs for sync errors
+
+### For Development
+- Use `manual` mode
+- Trigger syncs explicitly via `refresh_index`
+- Test incremental and full syncs
+
+### After Configuration Changes
+- Delete the vector store: `rm -rf ./data/hnswlib-store`
+- Restart the server (auto-sync will rebuild)
+- Or manually trigger: `refresh_index` with `force: true`
+
+## Troubleshooting
+
+### Index Not Updating
+
+Check:
+1. Sync mode is not `manual` (unless intended)
+2. S3 credentials are valid
+3. Files actually changed in S3 (check ETags)
+4. Server logs for sync errors
+
+### Slow Syncs
+
+- Use incremental sync (don't force full rebuilds)
+- Check network latency to S3
+- Verify S3 rate limits aren't being hit
+
+### Missing Files
+
+- Run full sync: `refresh_index` with `force: true`
+- Check S3 bucket contents
+- Verify file extensions are `.md`
+
+## Next Steps
+
+- [Learn about MCP tools](/S3-Documentation-MCP-Server/usage/mcp-tools/)
+- [Configure security](/S3-Documentation-MCP-Server/configuration/security/)
+- [Set up client configuration](/S3-Documentation-MCP-Server/usage/client-configuration/)
+

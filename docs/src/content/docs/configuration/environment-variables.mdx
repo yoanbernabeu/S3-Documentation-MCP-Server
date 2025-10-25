@@ -1,0 +1,213 @@
+---
+title: Environment Variables
+description: Complete guide to configuring S3 Documentation MCP with environment variables
+---
+
+Configure your S3 Documentation MCP server using environment variables in your `.env` file.
+
+## Quick Setup
+
+```bash
+cp env.example .env
+```
+
+Then edit `.env` with your specific configuration.
+
+## Essential Variables
+
+### S3 Configuration
+
+```bash
+# Your S3 bucket name
+S3_BUCKET_NAME=your-bucket-name
+
+# S3 access credentials
+S3_ACCESS_KEY_ID=your-access-key
+S3_SECRET_ACCESS_KEY=your-secret-key
+
+# AWS region (e.g., us-east-1, eu-west-1)
+S3_REGION=us-east-1
+
+# Optional: Custom S3 endpoint for non-AWS providers
+# Leave empty for AWS S3
+S3_ENDPOINT=
+```
+
+#### Examples for Different Providers
+
+**AWS S3:**
+```bash
+S3_ENDPOINT=
+S3_REGION=us-east-1
+```
+
+**MinIO:**
+```bash
+S3_ENDPOINT=https://minio.example.com
+S3_REGION=us-east-1  # Can be any value
+```
+
+**Scaleway:**
+```bash
+S3_ENDPOINT=https://s3.fr-par.scw.cloud
+S3_REGION=fr-par
+```
+
+**Cloudflare R2:**
+```bash
+S3_ENDPOINT=https://<account-id>.r2.cloudflarestorage.com
+S3_REGION=auto
+```
+
+### Embedding Provider
+
+Choose your embedding provider:
+
+```bash
+# ollama (default) or openai
+EMBEDDING_PROVIDER=ollama
+```
+
+**For Ollama (Local):**
+```bash
+OLLAMA_BASE_URL=http://localhost:11434
+OLLAMA_EMBEDDING_MODEL=nomic-embed-text
+```
+
+**For OpenAI (Cloud):**
+```bash
+OPENAI_API_KEY=sk-...your-key...
+OPENAI_EMBEDDING_MODEL=text-embedding-3-small  # or text-embedding-3-large
+```
+
+See [Embedding Providers](/S3-Documentation-MCP-Server/configuration/embedding-providers/) for detailed comparison.
+
+## Optional Variables
+
+### Server Configuration
+
+```bash
+# Server port (default: 3000)
+PORT=3000
+
+# Server host (default: 0.0.0.0)
+HOST=0.0.0.0
+```
+
+### RAG Configuration
+
+```bash
+# Number of results returned by search (default: 4)
+RAG_MAX_RESULTS=4
+
+# Chunk size for document splitting (default: 1000)
+RAG_CHUNK_SIZE=1000
+
+# Overlap between chunks (default: 200)
+RAG_CHUNK_OVERLAP=200
+```
+
+### Synchronization
+
+```bash
+# Sync mode: startup (default), periodic, or manual
+SYNC_MODE=startup
+
+# For periodic mode: interval in minutes (default: 60)
+SYNC_INTERVAL_MINUTES=60
+```
+
+See [Synchronization Modes](/S3-Documentation-MCP-Server/configuration/sync-modes/) for details.
+
+### Security
+
+```bash
+# Enable API key authentication (default: false)
+ENABLE_AUTH=false
+
+# API key for authentication (required if ENABLE_AUTH=true)
+MCP_API_KEY=your-secret-key-here
+```
+
+See [Security & Authentication](/S3-Documentation-MCP-Server/configuration/security/) for details.
+
+### Vector Store
+
+```bash
+# Path to store vector indices (default: ./data/hnswlib-store)
+VECTOR_STORE_PATH=./data/hnswlib-store
+```
+
+## Complete Example
+
+Here's a complete `.env` file example:
+
+```bash
+# S3 Configuration
+S3_BUCKET_NAME=my-docs-bucket
+S3_ACCESS_KEY_ID=AKIAIOSFODNN7EXAMPLE
+S3_SECRET_ACCESS_KEY=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+S3_REGION=us-east-1
+S3_ENDPOINT=
+
+# Embedding Provider (Ollama - Local)
+EMBEDDING_PROVIDER=ollama
+OLLAMA_BASE_URL=http://localhost:11434
+OLLAMA_EMBEDDING_MODEL=nomic-embed-text
+
+# Server
+PORT=3000
+HOST=0.0.0.0
+
+# RAG Configuration
+RAG_MAX_RESULTS=4
+RAG_CHUNK_SIZE=1000
+RAG_CHUNK_OVERLAP=200
+
+# Synchronization
+SYNC_MODE=startup
+SYNC_INTERVAL_MINUTES=60
+
+# Security (disabled by default)
+ENABLE_AUTH=false
+# MCP_API_KEY=
+
+# Vector Store
+VECTOR_STORE_PATH=./data/hnswlib-store
+```
+
+## Environment-Specific Configuration
+
+### Development
+
+```bash
+EMBEDDING_PROVIDER=ollama
+SYNC_MODE=manual
+ENABLE_AUTH=false
+```
+
+### Production
+
+```bash
+EMBEDDING_PROVIDER=openai
+SYNC_MODE=periodic
+SYNC_INTERVAL_MINUTES=30
+ENABLE_AUTH=true
+MCP_API_KEY=<strong-random-key>
+```
+
+## Validation
+
+The server validates your configuration on startup and will:
+
+- ✅ Show clear error messages for missing required variables
+- ✅ Warn about invalid values
+- ✅ Fall back to safe defaults where possible
+- ✅ Test S3 connectivity on startup
+
+## Next Steps
+
+- [Configure your embedding provider](/S3-Documentation-MCP-Server/configuration/embedding-providers/)
+- [Set up synchronization](/S3-Documentation-MCP-Server/configuration/sync-modes/)
+- [Enable authentication](/S3-Documentation-MCP-Server/configuration/security/)
+

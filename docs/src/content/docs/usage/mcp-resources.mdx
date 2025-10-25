@@ -1,0 +1,304 @@
+---
+title: MCP Resources
+description: Discover and access indexed files using the MCP Resources API
+---
+
+In addition to the 3 tools, the S3 Documentation MCP server implements the standard [MCP Resources API](https://modelcontextprotocol.io/specification/draft/server/resources) for file discovery and direct access.
+
+## What are MCP Resources?
+
+MCP Resources provide a standardized way to:
+- **List** all indexed files with metadata
+- **Read** the full content of specific files
+- **Browse** your documentation without semantic search
+
+Think of it as a file browser for your indexed documentation.
+
+## resources/list
+
+Lists all indexed Markdown files with metadata.
+
+### Response Format
+
+```json
+{
+  "resources": [
+    {
+      "uri": "s3doc://docs/configuration.md",
+      "name": "configuration.md",
+      "description": "Configuration Guide - Size: 5.4 KB, Chunks: 6, Modified: 2025-10-20",
+      "mimeType": "text/markdown"
+    },
+    {
+      "uri": "s3doc://docs/installation.md",
+      "name": "installation.md",
+      "description": "Installation Guide - Size: 3.2 KB, Chunks: 4, Modified: 2025-10-19",
+      "mimeType": "text/markdown"
+    }
+  ]
+}
+```
+
+### Resource Fields
+
+- **uri**: Unique identifier in the format `s3doc://<s3_key>`
+- **name**: Filename only (e.g., `configuration.md`)
+- **description**: Human-readable metadata (size, chunks, last modified)
+- **mimeType**: Always `text/markdown` for documentation files
+
+### Use Cases
+
+#### 1. Browse Available Documentation
+
+"What documentation files are available?"
+
+The LLM can list all indexed files and help users discover what's available.
+
+#### 2. File Discovery
+
+"Show me all files about configuration"
+
+The LLM can filter resources by name or description to find relevant files.
+
+#### 3. Navigation
+
+"List all files in the docs/ directory"
+
+Resources are organized by their S3 key structure.
+
+## resources/read
+
+Reads the full content of a specific file by its URI.
+
+### Request Format
+
+```json
+{
+  "uri": "s3doc://docs/configuration.md"
+}
+```
+
+### Response Format
+
+```json
+{
+  "contents": [
+    {
+      "uri": "s3doc://docs/configuration.md",
+      "mimeType": "text/markdown",
+      "text": "# Configuration Guide\n\nThis guide explains how to configure..."
+    }
+  ]
+}
+```
+
+### URI Format
+
+Resources use the `s3doc://` URI scheme:
+
+```
+s3doc://<s3_key>
+```
+
+**Examples:**
+- `s3doc://docs/guide.md`
+- `s3doc://api/authentication.md`
+- `s3doc://README.md`
+
+The `<s3_key>` is the full path in your S3 bucket.
+
+## Resources vs Tools
+
+### When to Use Resources
+
+Use Resources (`resources/list`, `resources/read`) when:
+- ✅ User wants to **browse** available files
+- ✅ User asks "What files do you have?"
+- ✅ User wants to read a **specific known file**
+- ✅ User wants to see file **metadata** (size, chunks, modified date)
+
+### When to Use Tools
+
+Use Tools (`search_documentation`) when:
+- ✅ User asks a **question** that requires semantic search
+- ✅ User wants to **find information** across multiple files
+- ✅ User doesn't know which file contains the answer
+
+### Example Comparisons
+
+| User Query | Use | Reason |
+|------------|-----|--------|
+| "What files are available?" | `resources/list` | Browsing files |
+| "Show me the installation.md file" | `resources/read` | Known file |
+| "How do I configure S3?" | `search_documentation` | Semantic search |
+| "What's in the configuration guide?" | `resources/read` | Known file |
+| "Find information about Docker" | `search_documentation` | Search across files |
+
+## Integration with LLM Clients
+
+Most MCP clients (Cursor, Claude Desktop, etc.) automatically support Resources:
+
+### Cursor
+
+Resources appear as available context sources. The LLM can:
+- Browse the resource list
+- Read specific files
+- Use resources to answer questions
+
+### Claude Desktop
+
+Resources are listed in the "Available Resources" section. Claude can:
+- Discover available documentation
+- Read full files on demand
+- Combine resources with semantic search
+
+## Practical Examples
+
+### Example 1: Browsing Documentation
+
+**User:** "What documentation files are available?"
+
+**LLM Actions:**
+1. Calls `resources/list`
+2. Presents the list of files with descriptions
+
+**Response:**
+> You have 15 documentation files:
+> - `configuration.md` - Configuration Guide (5.4 KB, 6 chunks)
+> - `installation.md` - Installation Guide (3.2 KB, 4 chunks)
+> - ...
+
+### Example 2: Reading a Specific File
+
+**User:** "Show me the complete installation guide"
+
+**LLM Actions:**
+1. Calls `resources/list` to find the file
+2. Identifies URI: `s3doc://docs/installation.md`
+3. Calls `resources/read` with that URI
+4. Returns the full content
+
+**Response:**
+> Here's the complete installation guide:
+> 
+> [Full Markdown content]
+
+### Example 3: Semantic Search + File Reading
+
+**User:** "How do I configure Docker?"
+
+**LLM Actions:**
+1. Calls `search_documentation` to find relevant information
+2. Finds source: `docs/installation.md`
+3. Optionally calls `resources/read` to get full context
+4. Provides answer with complete context
+
+**Response:**
+> According to the installation guide, here's how to configure Docker:
+> 
+> [Answer with full context]
+
+## Resource Lifecycle
+
+Resources are automatically managed by the synchronization system:
+
+**Flow:**
+```
+S3 Files → refresh_index → [Vector Index + Resources Registry]
+                                          ↓
+                            [resources/list, resources/read]
+```
+
+### Automatic Updates
+
+- ✅ New files in S3 → Automatically added to resources
+- ✅ Modified files → Metadata updated in resources
+- ✅ Deleted files → Automatically removed from resources
+
+### Synchronization
+
+Resources stay in sync with the vector index:
+- `SYNC_MODE=startup` → Resources updated at startup
+- `SYNC_MODE=periodic` → Resources updated at intervals
+- `SYNC_MODE=manual` → Resources updated with `refresh_index`
+
+## Metadata Details
+
+Each resource includes rich metadata:
+
+```json
+{
+  "uri": "s3doc://docs/configuration.md",
+  "name": "configuration.md",
+  "description": "Configuration Guide - Size: 5.4 KB, Chunks: 6, Modified: 2025-10-20T14:30:00.000Z",
+  "mimeType": "text/markdown"
+}
+```
+
+**Metadata Includes:**
+- **File name**: Easy to identify
+- **Size**: In human-readable format (KB, MB)
+- **Chunk count**: How many chunks in the index
+- **Last modified**: When the file was last updated in S3
+
+## Best Practices
+
+### For Users
+
+- Use Resources to **explore** available documentation
+- Use Tools to **search** for specific information
+- Combine both for comprehensive answers
+
+### For Developers
+
+- Keep file names descriptive (good names help in `resources/list`)
+- Organize files logically in S3 (reflected in URI structure)
+- Update documentation regularly (sync keeps resources fresh)
+
+## Troubleshooting
+
+### Resource Not Found
+
+**Error:** Resource URI not found
+
+**Cause:** File may have been deleted from S3 after indexing
+
+**Solution:**
+```json
+{
+  "force": false
+}
+```
+Run `refresh_index` to synchronize resources with S3.
+
+### Empty Resource List
+
+**Error:** `resources/list` returns empty array
+
+**Cause:** No files indexed yet
+
+**Solution:**
+1. Verify files exist in S3 bucket
+2. Check S3 credentials
+3. Run `refresh_index` with `force: true`
+
+### Resource Content Mismatch
+
+**Error:** Content from `resources/read` differs from search results
+
+**Cause:** File was modified in S3 but not yet synced
+
+**Solution:**
+```json
+{
+  "force": false
+}
+```
+Run `refresh_index` to update the index.
+
+## Next Steps
+
+- [Learn about MCP Tools](/S3-Documentation-MCP-Server/usage/mcp-tools/)
+- [Configure your MCP client](/S3-Documentation-MCP-Server/usage/client-configuration/)
+- [Understand synchronization modes](/S3-Documentation-MCP-Server/configuration/sync-modes/)
+

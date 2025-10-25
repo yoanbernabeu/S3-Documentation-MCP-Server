@@ -1,0 +1,668 @@
+---
+title: Architecture
+description: Understand how S3 Documentation MCP works under the hood
+---
+
+import { Card, CardGrid, Steps, Aside, Tabs, TabItem } from '@astrojs/starlight/components';
+
+Learn about the internal architecture and components of the S3 Documentation MCP server.
+
+## System Overview
+
+The system consists of 6 main components working together to provide RAG capabilities:
+
+<CardGrid>
+  <Card title="🌐 MCP Server" icon="rocket">
+    HTTP server implementing the MCP protocol. Routes requests to tools and resources.
+  </Card>
+  <Card title="☁️ S3Loader" icon="seti:aws">
+    Manages S3 communication. Lists, downloads, and tracks file changes via ETags.
+  </Card>
+  <Card title="🔄 SyncService" icon="refresh">
+    Orchestrates synchronization between S3 and vector store. Detects changes.
+  </Card>
+  <Card title="🧠 VectorStore" icon="star">
+    Chunks documents, generates embeddings, stores vectors, performs similarity search.
+  </Card>
+  <Card title="📡 Embedding Providers" icon="puzzle">
+    Generate vector embeddings via Ollama (local) or OpenAI (cloud).
+  </Card>
+  <Card title="📚 ResourceService" icon="open-book">
+    Manages MCP Resources API for file discovery and direct access.
+  </Card>
+</CardGrid>
+
+### Data Flow
+
+```
+MCP Client → MCP Server → [S3Loader ↔ S3 Bucket]
+                ↓
+         SyncService → VectorStore → HNSWLib Index
+                          ↓
+                  Embedding Provider
+                  (Ollama / OpenAI)
+```
+
+---
+
+## Core Components
+
+### 1. MCP Server
+
+The main HTTP server that implements the [Model Context Protocol](https://modelcontextprotocol.io).
+
+**Responsibilities:**
+
+<Steps>
+1. Accept MCP requests over HTTP
+2. Route tool calls to appropriate handlers
+3. Manage Resources API
+4. Handle authentication (optional)
+5. Provide health checks
+</Steps>
+
+**Technologies:**
+- Express.js for HTTP server
+- `@modelcontextprotocol/sdk` for MCP protocol
+
+**Endpoints:**
+- `POST /mcp` - MCP protocol endpoint
+- `GET /health` - Health check
+
+---
+
+### 2. S3Loader
+
+Manages communication with S3-compatible storage.
+
+<CardGrid>
+  <Card title="List Files" icon="list">
+    Scans bucket for `.md` files and retrieves metadata with ETags
+  </Card>
+  <Card title="Download Content" icon="down-caret">
+    Fetches file contents in parallel for efficiency
+  </Card>
+  <Card title="Track Changes" icon="approve-check">
+    Uses ETags to detect modifications without re-downloading
+  </Card>
+  <Card title="Handle Errors" icon="warning">
+    Robust retry logic and error handling
+  </Card>
+</CardGrid>
+
+**Technologies:**
+- AWS SDK v3 (`@aws-sdk/client-s3`)
+
+**S3 Sync Flow:**
+
+1. **List Files**: `SyncService` → `S3Loader` → `ListObjectsV2` → S3 Bucket
+2. **Get Metadata**: S3 returns file list with ETags
+3. **Compare**: `S3Loader` compares ETags to detect changes
+4. **Download**: Only changed files are downloaded via `GetObject`
+5. **Return**: File contents sent back to `SyncService`
+
+---
+
+### 3. SyncService
+
+Orchestrates the synchronization between S3 and the vector store.
+
+**Sync Modes:**
+
+<Tabs>
+<TabItem label="Startup (Default)">
+  **When**: At server startup
+  
+  **Behavior**:
+  - Full sync if vector store is empty
+  - Incremental sync if data exists
+  - Auto-detects first run
+  
+  **Best for**: Most deployments
+</TabItem>
+
+<TabItem label="Periodic">
+  **When**: At regular intervals (configurable)
+  
+  **Behavior**:
+  - Initial sync on startup
+  - Automatic syncs every N minutes
+  - Always incremental
+  
+  **Best for**: Frequently updated docs
+</TabItem>
+
+<TabItem label="Manual">
+  **When**: Only on `refresh_index` tool call
+  
+  **Behavior**:
+  - No automatic syncs
+  - Full control via API
+  
+  **Best for**: Development, testing
+</TabItem>
+</Tabs>
+
+**Incremental Sync Algorithm:**
+
+<Steps>
+1. Load current ETags from vector store
+2. List all files in S3 with their ETags
+3. Compare to detect:
+   - **New**: Files in S3 but not in store
+   - **Modified**: Files with different ETags
+   - **Deleted**: Files in store but not in S3
+4. Process only changed files
+5. Update vector store with changes
+</Steps>
+
+**Full Sync Algorithm:**
+
+<Steps>
+1. Clear entire vector store
+2. Download all files from S3
+3. Process all files from scratch
+4. Rebuild vector store completely
+</Steps>
+
+<Aside type="tip">
+  Use incremental sync for regular updates (fast). Use full sync only when changing embedding providers or chunk settings.
+</Aside>
+
+---
+
+### 4. VectorStore (HNSWLib)
+
+Manages document chunking, embedding generation, and vector similarity search.
+
+**Document Processing Pipeline:**
+
+```
+Markdown File → Text Splitter → Chunks → Embedding Provider
+                                           ↓
+                                    Vectors (embeddings)
+                                           ↓
+                                    HNSWLib Index
+                                           ↓
+                                    Search Results
+```
+
+**Chunking Strategy:**
+
+<CardGrid>
+  <Card title="Chunk Size" icon="document">
+    **1000 characters** (default)
+    
+    Configurable via `RAG_CHUNK_SIZE`
+  </Card>
+  <Card title="Overlap" icon="random">
+    **200 characters** (default)
+    
+    Prevents context loss at boundaries
+  </Card>
+  <Card title="Method" icon="puzzle">
+    **Recursive character splitting**
+    
+    Respects markdown structure
+  </Card>
+  <Card title="Preserves" icon="pencil">
+    **Markdown formatting**
+    
+    Code blocks, headings, lists intact
+  </Card>
+</CardGrid>
+
+**Technologies:**
+- `hnswlib-node` for vector indexing
+- `langchain` for document processing
+
+**Index Storage:**
+
+```
+./data/hnswlib-store/
+├── args.json          # Index configuration
+├── docstore.json      # Document metadata
+└── hnswlib.index      # Vector index (binary)
+```
+
+**What is HNSWLib?**
+
+**[HNSWLib](https://github.com/nmslib/hnswlib)** (Hierarchical Navigable Small World) is a fast, in-memory vector search library:
+
+- ⚡ **Fast**: Approximate nearest neighbor in milliseconds
+- 💾 **Simple**: Stores indices as local files
+- 🪶 **Efficient**: Low memory footprint
+- 🎯 **Accurate**: High recall with cosine similarity
+
+---
+
+### 5. Embedding Providers
+
+Generate vector embeddings for text chunks.
+
+<Tabs>
+<TabItem label="Ollama (Local)">
+
+**Configuration:**
+- Endpoint: `http://localhost:11434/api/embeddings`
+- Model: `nomic-embed-text`
+- Dimensions: 768
+
+**API Flow:**
+
+1. `VectorStore` sends text to `OllamaProvider`
+2. `OllamaProvider` calls `POST /api/embeddings`
+3. Ollama returns 768-dimensional vector
+4. Vector stored in HNSWLib index
+
+**Advantages:**
+- ✅ Free, unlimited usage
+- ✅ 100% private and local
+- ✅ Works offline
+- ✅ Fast local API calls
+
+</TabItem>
+
+<TabItem label="OpenAI (Cloud)">
+
+**Configuration:**
+- Endpoint: `https://api.openai.com/v1/embeddings`
+- Models: `text-embedding-3-small` (1536) or `text-embedding-3-large` (3072)
+
+**API Flow:**
+
+1. `VectorStore` sends text to `OpenAIProvider`
+2. `OpenAIProvider` calls `POST /v1/embeddings`
+3. OpenAI returns 1536/3072-dimensional vector
+4. Vector stored in HNSWLib index
+
+**Advantages:**
+- ✅ State-of-the-art accuracy
+- ✅ Excellent multilingual support
+- ✅ No local resources needed
+- ✅ Fast API responses
+
+**Cost:**
+- `text-embedding-3-small`: ~$0.00002/1K tokens
+- `text-embedding-3-large`: ~$0.00013/1K tokens
+
+</TabItem>
+</Tabs>
+
+<Aside type="caution">
+  **Important**: When switching providers, you must rebuild your vector index with `force: true` because embeddings are not compatible.
+</Aside>
+
+---
+
+### 6. ResourceService
+
+Manages the MCP Resources API for file discovery and access.
+
+**Capabilities:**
+
+<CardGrid>
+  <Card title="List Resources" icon="list">
+    Returns all indexed files with metadata (size, chunks, modified date)
+  </Card>
+  <Card title="Generate URIs" icon="star">
+    Creates unique `s3doc://` URIs for each file
+  </Card>
+  <Card title="Provide Descriptions" icon="information">
+    Human-readable metadata for each resource
+  </Card>
+  <Card title="Read Files" icon="open-book">
+    Retrieves full file contents by URI
+  </Card>
+</CardGrid>
+
+**Resource Format:**
+
+```json
+{
+  "uri": "s3doc://docs/file.md",
+  "name": "file.md",
+  "description": "File Name - Size: X KB, Chunks: Y, Modified: Z",
+  "mimeType": "text/markdown"
+}
+```
+
+---
+
+## Request Flows
+
+### Search Request Flow
+
+<Steps>
+1. **Client Request**: MCP client calls `search_documentation` with query
+2. **Query Processing**: MCP Server routes to VectorStore
+3. **Generate Embedding**: VectorStore sends query to Embedding Provider
+4. **Get Vector**: Provider returns query embedding
+5. **Search Index**: VectorStore queries HNSWLib for similar vectors
+6. **Retrieve Chunks**: HNSWLib returns most similar document chunks
+7. **Format Results**: VectorStore formats with metadata and scores
+8. **Return Response**: MCP Server sends results to client
+</Steps>
+
+**Typical Latency:**
+- Embedding generation: 10-50ms
+- Vector search: 10-30ms
+- **Total**: 50-100ms end-to-end
+
+---
+
+### Sync Request Flow
+
+<Steps>
+1. **Trigger**: Client calls `refresh_index` or automatic sync triggers
+2. **List Files**: SyncService asks S3Loader to list all files
+3. **Fetch Metadata**: S3Loader calls S3 `ListObjectsV2`
+4. **Return ETags**: S3 returns file list with ETags
+5. **Detect Changes**: SyncService compares ETags to detect new/modified/deleted
+6. **Download Changes**: S3Loader fetches only changed files via `GetObject`
+7. **Process Files**: VectorStore chunks and embeds changed documents
+8. **Update Index**: HNSWLib index is updated with new vectors
+9. **Return Stats**: SyncService reports sync statistics to client
+</Steps>
+
+**Typical Sync Times:**
+- Incremental (10 files changed): ~30 seconds
+- Full reindex (500 files): ~5 minutes (Ollama) or ~2 minutes (OpenAI)
+
+---
+
+## Performance Characteristics
+
+### Indexing Performance
+
+| Files | Total Size | Ollama | OpenAI |
+|-------|-----------|--------|--------|
+| 100   | 5 MB      | ~1 min | ~30 sec |
+| 500   | 25 MB     | ~5 min | ~2 min |
+| 1000  | 50 MB     | ~10 min | ~4 min |
+
+*Measured on M1 MacBook Pro*
+
+### Search Performance
+
+<CardGrid>
+  <Card title="Embedding Generation" icon="rocket">
+    **10-50ms**
+    
+    Varies by provider
+  </Card>
+  <Card title="Vector Search" icon="star">
+    **10-30ms**
+    
+    HNSWLib lookup
+  </Card>
+  <Card title="Total Latency" icon="approve-check">
+    **50-100ms**
+    
+    End-to-end search time
+  </Card>
+</CardGrid>
+
+### Storage Requirements
+
+| Component | 100 files | 1000 files |
+|-----------|-----------|------------|
+| Vector index | ~5 MB | ~50 MB |
+| Docstore metadata | ~100 KB | ~1 MB |
+| **Total** | **~5 MB** | **~51 MB** |
+
+---
+
+## Scalability
+
+### Current Design
+
+<CardGrid>
+  <Card title="Target Scale" icon="star">
+    Personal use, small teams
+    
+    **< 5000 files**
+  </Card>
+  <Card title="Storage" icon="document">
+    File-based (HNSWLib)
+    
+    Simple and portable
+  </Card>
+  <Card title="Search" icon="rocket">
+    In-memory vectors
+    
+    Very fast lookups
+  </Card>
+  <Card title="Concurrency" icon="random">
+    Multiple searches
+    
+    Handles concurrent users
+  </Card>
+</CardGrid>
+
+### Limitations
+
+<Aside type="caution">
+  - All vectors loaded in memory
+  - Single-server architecture
+  - No horizontal scaling
+  - File-based persistence only
+</Aside>
+
+### For Large Scale (> 10,000 files)
+
+If you need enterprise scale:
+
+<Steps>
+1. **Vector Database**: Replace HNSWLib with Pinecone, Weaviate, or Qdrant
+2. **Distributed Storage**: Use PostgreSQL or MongoDB for metadata
+3. **Caching Layer**: Add Redis for frequent queries
+4. **Load Balancing**: Deploy multiple server instances
+5. **Background Workers**: Separate sync workers from search API
+</Steps>
+
+---
+
+## Technology Stack
+
+### Runtime & Language
+
+<CardGrid>
+  <Card title="Node.js" icon="seti:javascript">
+    **>= 18**
+    
+    JavaScript runtime
+  </Card>
+  <Card title="TypeScript" icon="seti:typescript">
+    **Full typing**
+    
+    Type safety throughout
+  </Card>
+</CardGrid>
+
+### Core Libraries
+
+- **`@modelcontextprotocol/sdk`** - MCP protocol implementation
+- **`express`** - HTTP server and routing
+- **`@aws-sdk/client-s3`** - S3 client library
+
+### Vector Search
+
+- **`hnswlib-node`** - Fast vector indexing and search
+- **`langchain`** - Document processing and chunking
+
+### Embedding Providers
+
+- **`ollama`** - Local embedding generation
+- **`openai`** - Cloud embedding API
+
+### Development Tools
+
+- **`vitest`** - Fast unit testing
+- **`eslint`** - Code linting
+- **`prettier`** - Code formatting
+- **`typescript`** - Type checking
+
+---
+
+## Security Architecture
+
+### Authentication Layer
+
+When `ENABLE_AUTH=true`:
+
+<Steps>
+1. HTTP request arrives at MCP server
+2. Middleware checks for API key in:
+   - `Authorization: Bearer <key>` header, or
+   - `?api_key=<key>` query parameter
+3. If valid: Request proceeds to handler
+4. If invalid/missing: Returns `401 Unauthorized`
+5. Exception: `/health` always accessible
+</Steps>
+
+<Aside type="note">
+  API keys are stored in environment variables and never logged or exposed in responses.
+</Aside>
+
+### S3 Credentials
+
+- Stored securely in `.env` file
+- Never logged or exposed
+- Used only for S3 API calls
+- Follows AWS security best practices
+
+---
+
+## Monitoring & Observability
+
+### Structured Logging
+
+<CardGrid>
+  <Card title="INFO" icon="information">
+    Normal operations
+    
+    Sync, search, startup
+  </Card>
+  <Card title="WARN" icon="warning">
+    Non-critical issues
+    
+    Fallbacks, deprecations
+  </Card>
+  <Card title="ERROR" icon="error">
+    Critical failures
+    
+    S3 errors, sync failures
+  </Card>
+</CardGrid>
+
+### Health Check Endpoint
+
+```bash
+curl http://localhost:3000/health
+```
+
+**Returns:**
+- Server status
+- Vector store status
+- Document count
+- Chunk count
+- Last sync time
+
+### Metrics (Logged)
+
+Currently logged but not exported:
+- Search latency per query
+- Sync duration and file counts
+- Document and chunk counts
+- Error rates and types
+
+<Aside type="tip">
+  Future enhancement: Export metrics to Prometheus for monitoring dashboards.
+</Aside>
+
+---
+
+## Architecture Decisions
+
+### Why HNSWLib?
+
+<CardGrid>
+  <Card title="Simplicity" icon="star">
+    File-based storage, no database setup required
+  </Card>
+  <Card title="Performance" icon="rocket">
+    Fast approximate nearest neighbor search
+  </Card>
+  <Card title="Portability" icon="laptop">
+    Easy to backup, version, and migrate
+  </Card>
+  <Card title="Cost" icon="approve-check">
+    No cloud database costs
+  </Card>
+</CardGrid>
+
+### Why Two Embedding Providers?
+
+**Flexibility**: Users choose based on their needs:
+
+- **Ollama**: Privacy, offline, free
+- **OpenAI**: Accuracy, multilingual, cloud
+
+No vendor lock-in. Switch anytime.
+
+### Why S3?
+
+- **Universal**: De facto standard for object storage
+- **Compatible**: Works with many providers (AWS, MinIO, Cloudflare R2, etc.)
+- **Cost-effective**: Cheap storage, pay for what you use
+- **Reliable**: Built-in durability and availability
+
+---
+
+## Future Enhancements
+
+Potential improvements (not implemented):
+
+<CardGrid>
+  <Card title="📊 Metrics Export" icon="star">
+    Prometheus metrics for monitoring
+  </Card>
+  <Card title="🔍 Query Analytics" icon="information">
+    Track popular queries and patterns
+  </Card>
+  <Card title="🔄 Webhook Support" icon="rocket">
+    React to S3 events in real-time
+  </Card>
+  <Card title="🌐 Multi-language" icon="translate">
+    Better non-English support
+  </Card>
+  <Card title="🎯 Relevance Feedback" icon="approve-check">
+    Learn from user feedback
+  </Card>
+  <Card title="📈 Usage Dashboards" icon="chart">
+    Visual analytics and insights
+  </Card>
+</CardGrid>
+
+---
+
+## Learn More
+
+<CardGrid>
+  <Card title="API Reference" icon="document">
+    Complete HTTP and MCP API documentation
+    
+    [View API Docs →](/S3-Documentation-MCP-Server/reference/api/)
+  </Card>
+  <Card title="MCP Tools" icon="puzzle">
+    Learn about the 3 MCP tools available
+    
+    [Explore Tools →](/S3-Documentation-MCP-Server/usage/mcp-tools/)
+  </Card>
+  <Card title="Configuration" icon="setting">
+    Environment variables and settings
+    
+    [Configure Server →](/S3-Documentation-MCP-Server/configuration/environment-variables/)
+  </Card>
+</CardGrid>

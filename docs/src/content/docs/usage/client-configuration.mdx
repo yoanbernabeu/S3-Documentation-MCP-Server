@@ -1,0 +1,434 @@
+---
+title: Client Configuration
+description: Configure Cursor, Claude Desktop, and other MCP clients to connect to S3 Documentation MCP
+---
+
+Once your S3 Documentation MCP server is running, configure your MCP client to connect to it.
+
+## Prerequisites
+
+- Server running on `http://localhost:3000` (default)
+- Server health check passes: `curl http://localhost:3000/health`
+
+## Cursor
+
+### Configuration File
+
+Edit your Cursor MCP configuration file:
+
+```
+~/.cursor/mcp.json
+```
+
+### Basic Configuration (No Auth)
+
+```json
+{
+  "mcpServers": {
+    "doc": {
+      "type": "streamable-http",
+      "url": "http://127.0.0.1:3000/mcp",
+      "note": "S3 Documentation RAG Server"
+    }
+  }
+}
+```
+
+### With Authentication
+
+```json
+{
+  "mcpServers": {
+    "doc": {
+      "type": "streamable-http",
+      "url": "http://127.0.0.1:3000/mcp",
+      "headers": {
+        "Authorization": "Bearer your-secret-key"
+      },
+      "note": "S3 Documentation RAG Server with auth"
+    }
+  }
+}
+```
+
+### Multiple Servers
+
+You can configure multiple MCP servers:
+
+```json
+{
+  "mcpServers": {
+    "docs": {
+      "type": "streamable-http",
+      "url": "http://127.0.0.1:3000/mcp",
+      "note": "Product Documentation"
+    },
+    "api-docs": {
+      "type": "streamable-http",
+      "url": "http://127.0.0.1:3001/mcp",
+      "note": "API Documentation"
+    }
+  }
+}
+```
+
+### Restart Cursor
+
+After editing the configuration:
+1. Save the file
+2. Restart Cursor
+3. Open the MCP panel to verify the connection
+
+## Claude Desktop
+
+### Configuration Files
+
+**macOS:**
+```
+~/Library/Application Support/Claude/claude_desktop_config.json
+```
+
+**Windows:**
+```
+%APPDATA%/Claude/claude_desktop_config.json
+```
+
+**Linux:**
+```
+~/.config/Claude/claude_desktop_config.json
+```
+
+### Basic Configuration (No Auth)
+
+```json
+{
+  "mcpServers": {
+    "doc": {
+      "type": "streamable-http",
+      "url": "http://127.0.0.1:3000/mcp",
+      "note": "S3 Documentation RAG Server"
+    }
+  }
+}
+```
+
+### With Authentication
+
+```json
+{
+  "mcpServers": {
+    "doc": {
+      "type": "streamable-http",
+      "url": "http://127.0.0.1:3000/mcp",
+      "headers": {
+        "Authorization": "Bearer your-secret-key"
+      },
+      "note": "S3 Documentation RAG Server with auth"
+    }
+  }
+}
+```
+
+### Restart Claude Desktop
+
+After editing the configuration:
+1. Save the file
+2. Quit Claude Desktop completely
+3. Restart the application
+4. Verify the MCP server appears in the available tools
+
+## Docker Configuration
+
+If running the MCP server in Docker, use the appropriate host:
+
+### Docker on macOS/Windows
+
+```json
+{
+  "mcpServers": {
+    "doc": {
+      "type": "streamable-http",
+      "url": "http://host.docker.internal:3000/mcp"
+    }
+  }
+}
+```
+
+### Docker on Linux
+
+```json
+{
+  "mcpServers": {
+    "doc": {
+      "type": "streamable-http",
+      "url": "http://172.17.0.1:3000/mcp"
+    }
+  }
+}
+```
+
+Or use the host's IP address directly.
+
+## Remote Server
+
+If your MCP server is running on a remote host:
+
+```json
+{
+  "mcpServers": {
+    "doc": {
+      "type": "streamable-http",
+      "url": "https://mcp.example.com/mcp",
+      "headers": {
+        "Authorization": "Bearer your-secret-key"
+      },
+      "note": "Remote S3 Documentation Server"
+    }
+  }
+}
+```
+
+:::caution
+Always enable authentication (`ENABLE_AUTH=true`) for remote servers!
+:::
+
+## Custom Port
+
+If your server runs on a different port:
+
+```bash
+# In .env
+PORT=8080
+```
+
+```json
+{
+  "mcpServers": {
+    "doc": {
+      "type": "streamable-http",
+      "url": "http://127.0.0.1:8080/mcp"
+    }
+  }
+}
+```
+
+## Verification
+
+### Check Connection
+
+After configuring and restarting your client:
+
+**In Cursor:**
+1. Open the MCP panel (View → MCP)
+2. Verify "doc" server appears
+3. Check for 3 tools: `search_documentation`, `refresh_index`, `get_full_document`
+4. Check for available resources
+
+**In Claude Desktop:**
+1. Start a new conversation
+2. Type "/" to see available tools
+3. Verify "doc" tools appear
+4. Test with a simple query: "What documentation is available?"
+
+### Test Query
+
+Try a test search:
+
+```
+Search the documentation for "installation"
+```
+
+Expected behavior:
+- Client calls the `search_documentation` tool
+- Returns relevant results from your documentation
+- Shows source files and similarity scores
+
+## Troubleshooting
+
+### Server Not Appearing
+
+**Symptoms:** MCP server doesn't show up in the client
+
+**Solutions:**
+1. Verify JSON syntax is valid (no trailing commas, proper quotes)
+2. Check file path is correct
+3. Ensure proper file permissions (readable)
+4. Restart the client completely (quit and relaunch)
+
+### Connection Refused
+
+**Symptoms:** "Connection refused" or "Cannot connect" errors
+
+**Solutions:**
+1. Verify server is running: `curl http://localhost:3000/health`
+2. Check correct host and port in URL
+3. For Docker: Use `host.docker.internal` (macOS/Windows) or `172.17.0.1` (Linux)
+4. Check firewall settings
+
+### Authentication Errors
+
+**Symptoms:** "Unauthorized" or "Invalid API key" errors
+
+**Solutions:**
+1. Verify `Authorization` header is correctly formatted
+2. Check API key matches the one in `.env`
+3. Ensure no extra spaces or line breaks in the key
+4. Restart both server and client after changes
+
+### Tools Not Working
+
+**Symptoms:** Tools appear but don't return results
+
+**Solutions:**
+1. Check server logs for errors
+2. Verify S3 credentials are correct
+3. Ensure documents are indexed: run `refresh_index`
+4. Check network connectivity to S3
+
+### Resources Not Appearing
+
+**Symptoms:** No resources listed in the client
+
+**Solutions:**
+1. Verify files are indexed (check server logs)
+2. Run `refresh_index` to synchronize
+3. Check S3 bucket contains `.md` files
+4. Ensure correct bucket name in `.env`
+
+## Configuration Examples
+
+### Development Setup
+
+```json
+{
+  "mcpServers": {
+    "local-docs": {
+      "type": "streamable-http",
+      "url": "http://127.0.0.1:3000/mcp",
+      "note": "Local development documentation"
+    }
+  }
+}
+```
+
+### Production Setup
+
+```json
+{
+  "mcpServers": {
+    "prod-docs": {
+      "type": "streamable-http",
+      "url": "https://mcp.company.com/mcp",
+      "headers": {
+        "Authorization": "Bearer prod-api-key-here"
+      },
+      "note": "Production documentation server"
+    }
+  }
+}
+```
+
+### Multi-Environment Setup
+
+```json
+{
+  "mcpServers": {
+    "dev-docs": {
+      "type": "streamable-http",
+      "url": "http://127.0.0.1:3000/mcp",
+      "note": "Development documentation"
+    },
+    "staging-docs": {
+      "type": "streamable-http",
+      "url": "https://mcp-staging.company.com/mcp",
+      "headers": {
+        "Authorization": "Bearer staging-key"
+      },
+      "note": "Staging documentation"
+    },
+    "prod-docs": {
+      "type": "streamable-http",
+      "url": "https://mcp.company.com/mcp",
+      "headers": {
+        "Authorization": "Bearer prod-key"
+      },
+      "note": "Production documentation"
+    }
+  }
+}
+```
+
+## Advanced Configuration
+
+### Custom Timeouts
+
+Some clients support timeout configuration:
+
+```json
+{
+  "mcpServers": {
+    "doc": {
+      "type": "streamable-http",
+      "url": "http://127.0.0.1:3000/mcp",
+      "timeout": 30000,
+      "note": "30 second timeout"
+    }
+  }
+}
+```
+
+### Proxy Configuration
+
+If behind a corporate proxy:
+
+```json
+{
+  "mcpServers": {
+    "doc": {
+      "type": "streamable-http",
+      "url": "http://127.0.0.1:3000/mcp",
+      "proxy": "http://proxy.company.com:8080"
+    }
+  }
+}
+```
+
+## Best Practices
+
+### Naming
+
+Use descriptive names for multiple servers:
+
+```json
+{
+  "mcpServers": {
+    "product-docs": { ... },
+    "api-docs": { ... },
+    "internal-wiki": { ... }
+  }
+}
+```
+
+### Notes
+
+Always add a `note` field to document the purpose:
+
+```json
+{
+  "note": "S3 Documentation RAG Server - Product Documentation"
+}
+```
+
+### Security
+
+- ✅ Use `Authorization` header for authentication (not query parameters)
+- ✅ Enable authentication for remote servers
+- ✅ Use different API keys per environment
+- ❌ Never commit API keys to version control
+
+## Next Steps
+
+- [Learn about MCP Tools](/S3-Documentation-MCP-Server/usage/mcp-tools/)
+- [Explore MCP Resources](/S3-Documentation-MCP-Server/usage/mcp-resources/)
+- [Understand the architecture](/S3-Documentation-MCP-Server/reference/architecture/)
+

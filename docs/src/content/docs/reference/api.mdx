@@ -1,0 +1,481 @@
+---
+title: API Reference
+description: Complete API reference for S3 Documentation MCP server
+---
+
+Complete API reference for the S3 Documentation MCP server HTTP endpoints and MCP protocol.
+
+## HTTP Endpoints
+
+### POST /mcp
+
+MCP protocol endpoint for all tool and resource requests.
+
+**URL:** `http://localhost:3000/mcp`
+
+**Method:** `POST`
+
+**Headers:**
+```http
+Content-Type: application/json
+Authorization: Bearer your-api-key (if auth enabled)
+```
+
+**Body:** MCP protocol JSON-RPC messages
+
+**Response:** MCP protocol JSON-RPC responses
+
+See [MCP Protocol Specification](https://modelcontextprotocol.io/specification) for details.
+
+### GET /health
+
+Health check endpoint (always public, no auth required).
+
+**URL:** `http://localhost:3000/health`
+
+**Method:** `GET`
+
+**Headers:** None required
+
+**Response:**
+```json
+{
+  "status": "healthy",
+  "timestamp": "2025-10-25T10:30:00.000Z",
+  "version": "0.0.0",
+  "vectorStore": {
+    "status": "ready",
+    "documentCount": 125,
+    "chunkCount": 847
+  }
+}
+```
+
+**Status Codes:**
+- `200 OK` - Server is healthy
+- `503 Service Unavailable` - Server is unhealthy
+
+## MCP Tools
+
+### search_documentation
+
+Semantic search across indexed documentation.
+
+**Input Schema:**
+```typescript
+{
+  query: string;        // Search query (required)
+  max_results?: number; // Max results to return (default: 4)
+}
+```
+
+**Output Schema:**
+```typescript
+{
+  results: Array<{
+    content: string;          // Chunk content
+    metadata: {
+      source: string;         // S3 key
+      chunk_index: number;    // Chunk position in document
+    };
+    score: number;            // Similarity score (0-1)
+  }>;
+  query: string;              // Original query
+  total_results: number;      // Number of results returned
+}
+```
+
+**Example Request:**
+```json
+{
+  "query": "How to configure S3 credentials?",
+  "max_results": 4
+}
+```
+
+**Example Response:**
+```json
+{
+  "results": [
+    {
+      "content": "To configure S3 credentials...",
+      "metadata": {
+        "source": "docs/configuration.md",
+        "chunk_index": 2
+      },
+      "score": 0.92
+    }
+  ],
+  "query": "How to configure S3 credentials?",
+  "total_results": 1
+}
+```
+
+**Errors:**
+- `400 Bad Request` - Invalid query or parameters
+- `500 Internal Server Error` - Search failure
+
+### refresh_index
+
+Synchronize vector index with S3 bucket.
+
+**Input Schema:**
+```typescript
+{
+  force?: boolean; // true = full reindex, false = incremental (default: false)
+}
+```
+
+**Output Schema:**
+```typescript
+{
+  status: "success" | "error";
+  message: string;
+  stats: {
+    new_files: number;
+    modified_files: number;
+    deleted_files: number;
+    total_documents: number;
+    sync_time_seconds: number;
+  };
+}
+```
+
+**Example Request (Incremental):**
+```json
+{
+  "force": false
+}
+```
+
+**Example Request (Full):**
+```json
+{
+  "force": true
+}
+```
+
+**Example Response:**
+```json
+{
+  "status": "success",
+  "message": "Index synchronized successfully",
+  "stats": {
+    "new_files": 3,
+    "modified_files": 2,
+    "deleted_files": 1,
+    "total_documents": 125,
+    "sync_time_seconds": 8.3
+  }
+}
+```
+
+**Errors:**
+- `500 Internal Server Error` - Sync failure
+- `503 Service Unavailable` - S3 connection issues
+
+### get_full_document
+
+Retrieve complete content of a specific Markdown file.
+
+**Input Schema:**
+```typescript
+{
+  s3_key: string; // S3 key (e.g., "docs/guide.md")
+}
+```
+
+**Output Schema:**
+```typescript
+{
+  s3_key: string;
+  content: string;
+  metadata: {
+    size_bytes: number;
+    last_modified: string; // ISO 8601 timestamp
+    etag: string;
+    chunk_count: number;
+  };
+}
+```
+
+**Example Request:**
+```json
+{
+  "s3_key": "docs/configuration.md"
+}
+```
+
+**Example Response:**
+```json
+{
+  "s3_key": "docs/configuration.md",
+  "content": "# Configuration Guide\n\n...",
+  "metadata": {
+    "size_bytes": 5432,
+    "last_modified": "2025-10-20T14:30:00.000Z",
+    "etag": "\"abc123def456\"",
+    "chunk_count": 6
+  }
+}
+```
+
+**Errors:**
+- `400 Bad Request` - Invalid S3 key
+- `404 Not Found` - Document not found
+- `500 Internal Server Error` - Retrieval failure
+
+## MCP Resources
+
+### resources/list
+
+List all indexed Markdown files with metadata.
+
+**Input:** None (part of MCP protocol)
+
+**Output Schema:**
+```typescript
+{
+  resources: Array<{
+    uri: string;          // Format: s3doc://<s3_key>
+    name: string;         // Filename only
+    description: string;  // Human-readable metadata
+    mimeType: string;     // Always "text/markdown"
+  }>;
+}
+```
+
+**Example Response:**
+```json
+{
+  "resources": [
+    {
+      "uri": "s3doc://docs/configuration.md",
+      "name": "configuration.md",
+      "description": "Configuration Guide - Size: 5.4 KB, Chunks: 6, Modified: 2025-10-20",
+      "mimeType": "text/markdown"
+    },
+    {
+      "uri": "s3doc://docs/installation.md",
+      "name": "installation.md",
+      "description": "Installation Guide - Size: 3.2 KB, Chunks: 4, Modified: 2025-10-19",
+      "mimeType": "text/markdown"
+    }
+  ]
+}
+```
+
+### resources/read
+
+Read the full content of a specific file by URI.
+
+**Input Schema:**
+```typescript
+{
+  uri: string; // Format: s3doc://<s3_key>
+}
+```
+
+**Output Schema:**
+```typescript
+{
+  contents: Array<{
+    uri: string;
+    mimeType: string;
+    text: string;
+  }>;
+}
+```
+
+**Example Request:**
+```json
+{
+  "uri": "s3doc://docs/configuration.md"
+}
+```
+
+**Example Response:**
+```json
+{
+  "contents": [
+    {
+      "uri": "s3doc://docs/configuration.md",
+      "mimeType": "text/markdown",
+      "text": "# Configuration Guide\n\n..."
+    }
+  ]
+}
+```
+
+**Errors:**
+- `404 Not Found` - Resource URI not found
+
+## Authentication
+
+### Authorization Header (Recommended)
+
+```http
+Authorization: Bearer your-secret-api-key
+```
+
+**Example:**
+```bash
+curl -H "Authorization: Bearer abc123" \
+  -H "Content-Type: application/json" \
+  -d '{"query": "test"}' \
+  http://localhost:3000/mcp
+```
+
+### Query Parameter (Alternative)
+
+```http
+?api_key=your-secret-api-key
+```
+
+**Example:**
+```bash
+curl "http://localhost:3000/mcp?api_key=abc123"
+```
+
+### Error Responses
+
+**Missing API Key:**
+```json
+{
+  "error": "Unauthorized",
+  "message": "Missing API key"
+}
+```
+**Status:** 401 Unauthorized
+
+**Invalid API Key:**
+```json
+{
+  "error": "Unauthorized",
+  "message": "Invalid API key"
+}
+```
+**Status:** 401 Unauthorized
+
+## Rate Limiting
+
+Currently **no rate limiting** is implemented. Consider adding:
+
+- Reverse proxy rate limiting (nginx, Caddy)
+- API gateway (Kong, Traefik)
+- Application-level rate limiting
+
+## CORS
+
+CORS is **disabled by default** for security. If needed, configure via reverse proxy or environment variables.
+
+## Error Handling
+
+### Standard Error Format
+
+All errors follow this format:
+
+```typescript
+{
+  error: string;    // Error type
+  message: string;  // Human-readable message
+  details?: any;    // Optional additional details
+}
+```
+
+### HTTP Status Codes
+
+| Code | Meaning | When |
+|------|---------|------|
+| 200 | OK | Successful request |
+| 400 | Bad Request | Invalid input parameters |
+| 401 | Unauthorized | Missing or invalid API key |
+| 404 | Not Found | Resource not found |
+| 500 | Internal Server Error | Server-side error |
+| 503 | Service Unavailable | Service temporarily down |
+
+## Logging
+
+### Log Levels
+
+- **INFO**: Normal operations (startup, search, sync)
+- **WARN**: Non-critical issues (fallback, deprecated features)
+- **ERROR**: Critical failures (S3 errors, sync failures)
+
+### Log Format
+
+```
+[2025-10-25T10:30:00.000Z] [INFO] Starting server on port 3000
+[2025-10-25T10:30:05.000Z] [INFO] Sync completed: 3 new, 2 modified, 1 deleted
+[2025-10-25T10:30:10.000Z] [ERROR] S3 connection failed: AccessDenied
+```
+
+## Webhooks
+
+**Not currently supported.** Future enhancement.
+
+## Versioning
+
+API versioning is **not implemented**. The API is currently unstable and may change without notice.
+
+## Client Libraries
+
+### Official
+
+- None currently available
+
+### MCP SDKs
+
+Use standard MCP client libraries:
+- `@modelcontextprotocol/sdk` (JavaScript/TypeScript)
+- Cursor built-in MCP client
+- Claude Desktop built-in MCP client
+
+## OpenAPI Specification
+
+OpenAPI spec is **not currently available**. Future enhancement.
+
+## GraphQL
+
+GraphQL is **not supported**. The server uses MCP protocol over HTTP.
+
+## WebSocket
+
+WebSocket is **not supported**. All communication is via HTTP POST.
+
+## Batch Requests
+
+Batch requests are **not currently supported**. Send individual requests for each operation.
+
+## Pagination
+
+Pagination is **not implemented**. All results are returned in a single response, limited by `max_results`.
+
+## Caching
+
+No HTTP caching headers are currently set. Consider adding:
+
+```http
+Cache-Control: no-store
+```
+
+Or implement caching at the reverse proxy level.
+
+## Content Negotiation
+
+Only `application/json` is supported:
+
+```http
+Content-Type: application/json
+```
+
+## Compression
+
+No compression is applied by default. Enable via reverse proxy (gzip, br).
+
+## Next Steps
+
+- [Learn about MCP Tools](/S3-Documentation-MCP-Server/usage/mcp-tools/)
+- [Understand the architecture](/S3-Documentation-MCP-Server/reference/architecture/)
+- [Configure your client](/S3-Documentation-MCP-Server/usage/client-configuration/)
+

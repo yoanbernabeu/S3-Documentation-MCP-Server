@@ -1,0 +1,748 @@
+---
+title: S3 Documentation MCP
+description: Transform your S3-stored documentation into an AI-powered knowledge base with RAG capabilities
+template: splash
+hero:
+  tagline: |
+    <span class="gradient-text">AI-Powered Documentation Search</span>
+    <br/>Transform your S3 docs into intelligent, context-aware answers
+  actions:
+    - text: Get Started
+      link: /S3-Documentation-MCP-Server/getting-started/quick-start/
+      icon: right-arrow
+      variant: primary
+      attrs:
+        class: cta-primary
+    - text: View on GitHub
+      link: https://github.com/yoanbernabeu/S3-Documentation-MCP-Server
+      icon: external
+      variant: minimal
+      attrs:
+        class: cta-secondary
+---
+
+import { Card, CardGrid, LinkCard, Aside, Badge, Tabs, TabItem, Steps } from '@astrojs/starlight/components';
+
+<div class="hero-demo-container">
+  <div class="chat-window">
+    <div class="chat-header">
+      <div class="chat-header-left">
+        <div class="chat-dot chat-dot-red"></div>
+        <div class="chat-dot chat-dot-yellow"></div>
+        <div class="chat-dot chat-dot-green"></div>
+      </div>
+      <div class="chat-header-title">
+        <span class="chat-title-icon">💬</span> Claude + S3 Doc MCP
+      </div>
+      <div class="chat-header-right">
+        <span class="status-indicator">🟢 Connected</span>
+      </div>
+    </div>
+    <div class="chat-messages" id="chatMessages">
+      {/* Message 1 */}
+      <div class="message user-message chat-msg" id="msg1">
+        <div class="message-avatar">👤</div>
+        <div class="message-content">
+          <div class="message-text">How do I configure the S3 MCP server?</div>
+        </div>
+      </div>
+      
+      {/* Thinking 1 */}
+      <div class="message assistant-message chat-msg" id="msg2" style="display: none;">
+        <div class="message-avatar">🤖</div>
+        <div class="message-content">
+          <div class="thinking-indicator">
+            <div class="thinking-dots">
+              <span></span><span></span><span></span>
+            </div>
+            <span style="margin-left: 0.5rem; opacity: 0.8;">Thinking...</span>
+          </div>
+        </div>
+      </div>
+      
+      {/* Tool Call 1 */}
+      <div class="message assistant-message chat-msg" id="msg3" style="display: none;">
+        <div class="message-avatar">🤖</div>
+        <div class="message-content">
+          <div class="mcp-tool-call" style="background: rgba(139, 92, 246, 0.15); padding: 0.5rem 1rem; border-radius: 0.5rem; font-size: 0.85rem; border: 1px solid rgba(139, 92, 246, 0.3);">
+            <span style="color: var(--neon-purple);">🔧 Calling tool:</span> <code>search_documentation</code>
+            <div style="margin-top: 0.25rem; opacity: 0.8;">Query: "S3 configuration environment variables setup"</div>
+          </div>
+        </div>
+      </div>
+      
+      {/* Response 1 */}
+      <div class="message assistant-message chat-msg" id="msg4" style="display: none;">
+        <div class="message-avatar">🤖</div>
+        <div class="message-content">
+          <div class="message-text">
+            <p>To configure the S3 MCP server, you'll need to set these environment variables:</p>
+            <ul>
+              <li><code>AWS_S3_BUCKET</code> - Your S3 bucket name</li>
+              <li><code>AWS_REGION</code> - AWS region (e.g., us-east-1)</li>
+              <li><code>EMBEDDING_PROVIDER</code> - "ollama" or "openai"</li>
+            </ul>
+          </div>
+          <div class="message-sources" style="margin-top: 0.75rem;">
+            <div class="source-label">📚 Sources:</div>
+            <div class="source-tags">
+              <span class="source-tag">environment-variables.md</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      {/* Message 2 */}
+      <div class="message user-message chat-msg" id="msg5" style="display: none;">
+        <div class="message-avatar">👤</div>
+        <div class="message-content">
+          <div class="message-text">Show me the complete configuration file</div>
+        </div>
+      </div>
+      
+      {/* Thinking 2 */}
+      <div class="message assistant-message chat-msg" id="msg6" style="display: none;">
+        <div class="message-avatar">🤖</div>
+        <div class="message-content">
+          <div class="thinking-indicator">
+            <div class="thinking-dots">
+              <span></span><span></span><span></span>
+            </div>
+            <span style="margin-left: 0.5rem; opacity: 0.8;">Retrieving document...</span>
+          </div>
+        </div>
+      </div>
+      
+      {/* Tool Call 2 */}
+      <div class="message assistant-message chat-msg" id="msg7" style="display: none;">
+        <div class="message-avatar">🤖</div>
+        <div class="message-content">
+          <div class="mcp-tool-call" style="background: rgba(6, 182, 212, 0.15); padding: 0.5rem 1rem; border-radius: 0.5rem; font-size: 0.85rem; border: 1px solid rgba(6, 182, 212, 0.3);">
+            <span style="color: var(--neon-cyan);">📄 Using resource:</span> <code>get_full_document</code>
+            <div style="margin-top: 0.25rem; opacity: 0.8;">File: "configuration/environment-variables.md"</div>
+          </div>
+        </div>
+      </div>
+      
+      {/* Response 2 */}
+      <div class="message assistant-message chat-msg" id="msg8" style="display: none;">
+        <div class="message-avatar">🤖</div>
+        <div class="message-content">
+          <div class="message-text">
+            <p>Here's the complete environment configuration:</p>
+            <pre style="background: rgba(31, 36, 55, 0.8); padding: 0.75rem; border-radius: 0.5rem; overflow-x: auto; font-size: 0.85rem;"><code>AWS_S3_BUCKET=my-docs
+AWS_REGION=us-east-1
+EMBEDDING_PROVIDER=ollama
+OLLAMA_BASE_URL=http://localhost:11434</code></pre>
+          </div>
+        </div>
+      </div>
+      
+      {/* Message 3 */}
+      <div class="message user-message chat-msg" id="msg9" style="display: none;">
+        <div class="message-avatar">👤</div>
+        <div class="message-content">
+          <div class="message-text">How does incremental sync work?</div>
+        </div>
+      </div>
+      
+      {/* Thinking 3 */}
+      <div class="message assistant-message chat-msg" id="msg10" style="display: none;">
+        <div class="message-avatar">🤖</div>
+        <div class="message-content">
+          <div class="thinking-indicator">
+            <div class="thinking-dots">
+              <span></span><span></span><span></span>
+            </div>
+            <span style="margin-left: 0.5rem; opacity: 0.8;">Searching for sync information...</span>
+          </div>
+        </div>
+      </div>
+      
+      {/* Tool Call 3 */}
+      <div class="message assistant-message chat-msg" id="msg11" style="display: none;">
+        <div class="message-avatar">🤖</div>
+        <div class="message-content">
+          <div class="mcp-tool-call" style="background: rgba(139, 92, 246, 0.15); padding: 0.5rem 1rem; border-radius: 0.5rem; font-size: 0.85rem; border: 1px solid rgba(139, 92, 246, 0.3);">
+            <span style="color: var(--neon-purple);">🔧 Calling tool:</span> <code>search_documentation</code>
+            <div style="margin-top: 0.25rem; opacity: 0.8;">Query: "incremental synchronization ETag comparison"</div>
+          </div>
+        </div>
+      </div>
+      
+      {/* Response 3 */}
+      <div class="message assistant-message chat-msg" id="msg12" style="display: none;">
+        <div class="message-avatar">🤖</div>
+        <div class="message-content">
+          <div class="message-text">
+            <p>The incremental sync is the default mode and works efficiently:</p>
+            <p><strong>How it works:</strong> It only processes files that changed since the last sync using ETag comparison from S3.</p>
+            <p><strong>Full sync:</strong> To re-index all files, use <code>refresh_index --force</code></p>
+          </div>
+          <div class="message-sources" style="margin-top: 0.75rem;">
+            <div class="source-label">📚 Sources:</div>
+            <div class="source-tags">
+              <span class="source-tag">sync-modes.md</span>
+              <span class="source-tag">mcp-tools.md</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      {/* Message 4 */}
+      <div class="message user-message chat-msg" id="msg13" style="display: none;">
+        <div class="message-avatar">👤</div>
+        <div class="message-content">
+          <div class="message-text">What embedding providers are supported?</div>
+        </div>
+      </div>
+      
+      {/* Thinking 4 */}
+      <div class="message assistant-message chat-msg" id="msg14" style="display: none;">
+        <div class="message-avatar">🤖</div>
+        <div class="message-content">
+          <div class="thinking-indicator">
+            <div class="thinking-dots">
+              <span></span><span></span><span></span>
+            </div>
+            <span style="margin-left: 0.5rem; opacity: 0.8;">Analyzing embedding options...</span>
+          </div>
+        </div>
+      </div>
+      
+      {/* Tool Call 4 */}
+      <div class="message assistant-message chat-msg" id="msg15" style="display: none;">
+        <div class="message-avatar">🤖</div>
+        <div class="message-content">
+          <div class="mcp-tool-call" style="background: rgba(139, 92, 246, 0.15); padding: 0.5rem 1rem; border-radius: 0.5rem; font-size: 0.85rem; border: 1px solid rgba(139, 92, 246, 0.3);">
+            <span style="color: var(--neon-purple);">🔧 Calling tool:</span> <code>search_documentation</code>
+            <div style="margin-top: 0.25rem; opacity: 0.8;">Query: "embedding providers ollama openai support"</div>
+          </div>
+        </div>
+      </div>
+      
+      {/* Response 4 */}
+      <div class="message assistant-message chat-msg" id="msg16" style="display: none;">
+        <div class="message-avatar">🤖</div>
+        <div class="message-content">
+          <div class="message-text">
+            <p>The MCP server supports two embedding providers:</p>
+            <p>🦙 <strong>Ollama</strong> - Free, local, privacy-focused (default)</p>
+            <p>🤖 <strong>OpenAI</strong> - Cloud-based, requires API key</p>
+            <p>Both use the same interface, making it easy to switch!</p>
+          </div>
+          <div class="message-sources" style="margin-top: 0.75rem;">
+            <div class="source-label">📚 Sources:</div>
+            <div class="source-tags">
+              <span class="source-tag">embedding-providers.md</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div style="text-align: center; margin: 0 0 2rem;">
+  <span class="status-badge badge-warning">🚧 Work in Progress</span>
+  <span class="status-badge badge-success" style="margin-left: 0.5rem;">✓ Open Source</span>
+  <span class="status-badge badge-info" style="margin-left: 0.5rem;">⚡ MIT License</span>
+</div>
+
+<script is:inline set:html={`
+  (function() {
+    const messages = [
+      'msg1',  // User question
+      'msg2',  // Thinking
+      'msg3',  // Tool call
+      'msg4',  // Response
+      'msg5',  // User question
+      'msg6',  // Thinking
+      'msg7',  // Tool call
+      'msg8',  // Response
+      'msg9',  // User question
+      'msg10', // Thinking
+      'msg11', // Tool call
+      'msg12', // Response
+      'msg13', // User question
+      'msg14', // Thinking
+      'msg15', // Tool call
+      'msg16'  // Response
+    ];
+    
+    const delays = [
+      0,     // msg1: User question (immediate)
+      1200,  // msg2: Show thinking after user question
+      800,   // msg3: Show tool call after thinking
+      1500,  // msg4: Show response after tool call
+      2000,  // msg5: Next user question
+      1000,  // msg6: Thinking
+      700,   // msg7: Tool call
+      1800,  // msg8: Response with code
+      2000,  // msg9: User question
+      1000,  // msg10: Thinking
+      800,   // msg11: Tool call
+      1600,  // msg12: Response
+      2000,  // msg13: User question
+      1100,  // msg14: Thinking
+      750,   // msg15: Tool call
+      1500   // msg16: Final response
+    ];
+    
+    function scrollToBottom() {
+      const chatMessages = document.getElementById('chatMessages');
+      if (chatMessages) {
+        chatMessages.scrollTo({
+          top: chatMessages.scrollHeight,
+          behavior: 'smooth'
+        });
+      }
+    }
+    
+    function showMessage(index) {
+      if (index >= messages.length) {
+        setTimeout(resetChat, 3000);
+        return;
+      }
+      
+      const msg = document.getElementById(messages[index]);
+      if (msg) {
+        msg.style.display = 'flex';
+        msg.style.animation = 'fadeInUp 0.5s ease-out';
+        scrollToBottom();
+      }
+      
+      setTimeout(function() {
+        showMessage(index + 1);
+      }, delays[index + 1] || 2000);
+    }
+    
+    function resetChat() {
+      messages.forEach(function(msgId) {
+        const msg = document.getElementById(msgId);
+        if (msg) {
+          msg.style.display = 'none';
+        }
+      });
+      
+      const chatMessages = document.getElementById('chatMessages');
+      if (chatMessages) {
+        chatMessages.scrollTop = 0;
+      }
+      
+      setTimeout(function() {
+        showMessage(0);
+      }, 500);
+    }
+    
+    function startAnimation() {
+      messages.forEach(function(msgId, index) {
+        const msg = document.getElementById(msgId);
+        if (msg && index > 0) {
+          msg.style.display = 'none';
+        }
+      });
+      
+      setTimeout(function() {
+        showMessage(1);
+      }, 1500);
+    }
+    
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', startAnimation);
+    } else {
+      startAnimation();
+    }
+  })();
+`} />
+
+---
+
+## <span class="gradient-text">Why S3 Documentation MCP?</span>
+
+Connect your **LLM** (Claude, Cursor, GPT) to **S3-stored documentation** for intelligent, RAG-powered answers. No complex infrastructure. No heavy dependencies.
+
+<div style="padding: 2rem; background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(139, 92, 246, 0.1)); border-radius: 1rem; border: 1px solid rgba(59, 130, 246, 0.3); margin: 2rem 0;">
+  <div style="text-align: center;">
+    <div style="font-size: 3rem; margin-bottom: 1rem;">🧠 ⚡ 📚</div>
+    <h3 style="margin: 0; color: var(--neon-blue);">Semantic Search • Vector Embeddings • Real-time Sync</h3>
+    <p style="margin-top: 0.5rem; opacity: 0.9;">Built for developers who value simplicity and performance</p>
+  </div>
+</div>
+
+<CardGrid stagger>
+  <Card title="🪶 Zero Dependencies" icon="rocket">
+    <div class="feature-content">
+      File-based vector storage with **HNSWLib**. No databases, no cloud services. Just simple, powerful RAG.
+    </div>
+  </Card>
+  
+  <Card title="🏠 Your Data, Your Rules" icon="setting">
+    <div class="feature-content">
+      Run embeddings **locally** with Ollama (free, private) or use **OpenAI** (cloud, high-accuracy). Switch anytime.
+    </div>
+  </Card>
+  
+  <Card title="💾 Simple as Files" icon="document">
+    <div class="feature-content">
+      Vector indices are just files on disk. Easy to backup, version, and debug. **No black boxes.**
+    </div>
+  </Card>
+  
+  <Card title="🔌 Universal S3" icon="seti:aws">
+    <div class="feature-content">
+      AWS S3, MinIO, Scaleway, Cloudflare R2, DigitalOcean... **If it speaks S3, it works.**
+    </div>
+	</Card>
+</CardGrid>
+
+---
+
+## <span class="gradient-text">Get Started in 60 Seconds</span>
+
+<Tabs>
+<TabItem label="🐳 Docker (Recommended)">
+
+```bash
+# 1. Pull Ollama model (local embeddings)
+ollama pull nomic-embed-text
+
+# 2. Configure S3 credentials
+cp env.example .env  # Add your S3 credentials
+
+# 3. Run the server
+docker run -d --name s3-doc-mcp -p 3000:3000 \
+  --env-file .env \
+  -e OLLAMA_BASE_URL=http://host.docker.internal:11434 \
+  -v $(pwd)/data:/app/data \
+  yoanbernabeu/s3-doc-mcp:latest
+```
+
+✨ **That's it!** Your MCP server is now running on `http://localhost:3000`
+
+</TabItem>
+
+<TabItem label="📦 From Source">
+
+```bash
+# 1. Clone and install
+git clone https://github.com/yoanbernabeu/S3-Documentation-MCP-Server.git
+cd S3-Documentation-MCP-Server
+npm install
+
+# 2. Configure
+cp env.example .env  # Add your S3 credentials
+
+# 3. Build and run
+npm run build && npm start
+```
+
+🚀 **Ready!** Server running on `http://localhost:3000`
+
+</TabItem>
+
+<TabItem label="⚡ One-Liner">
+
+```bash
+docker run -d -p 3000:3000 --env-file .env \
+  -e OLLAMA_BASE_URL=http://host.docker.internal:11434 \
+  yoanbernabeu/s3-doc-mcp:latest
+```
+
+⚡ **Fastest way** to get up and running!
+
+</TabItem>
+</Tabs>
+
+<div style="text-align: center; margin: 3rem 0;">
+  <a href="/S3-Documentation-MCP-Server/getting-started/installation/" class="cta-primary">
+    📖 Full Installation Guide
+  </a>
+</div>
+
+---
+
+## <span class="gradient-text">Powerful Features</span>
+
+<CardGrid>
+  <LinkCard 
+    title="🔍 Semantic Search" 
+    description="Find information by meaning, not just keywords. Powered by vector embeddings and similarity search for intelligent results."
+    href="/S3-Documentation-MCP-Server/usage/mcp-tools/#search_documentation"
+  />
+  <LinkCard 
+    title="🔄 Smart Sync" 
+    description="Incremental updates via ETag comparison. Only processes changed files. Fast, efficient, and automatic."
+    href="/S3-Documentation-MCP-Server/configuration/sync-modes/"
+  />
+  <LinkCard 
+    title="🔐 Optional Auth" 
+    description="API key authentication for shared deployments. Open by default for local development. Flexible and secure."
+    href="/S3-Documentation-MCP-Server/configuration/security/"
+  />
+  <LinkCard 
+    title="📚 MCP Resources" 
+    description="Browse and access your documentation files directly. No semantic search needed. Direct file access."
+    href="/S3-Documentation-MCP-Server/usage/mcp-resources/"
+  />
+</CardGrid>
+
+---
+
+## <span class="gradient-text">Why Developers Choose This</span>
+
+<CardGrid>
+  <Card title="For Developers" icon="laptop">
+    **Dead simple to deploy**
+    
+    Works with Docker or Node.js. No Kubernetes, no cloud complexity. Just `docker run` and you're done.
+	</Card>
+  
+  <Card title="For Privacy-First Teams" icon="approve-check">
+    **100% offline capable**
+    
+    Use Ollama for completely local operation. Your docs **never leave** your infrastructure.
+	</Card>
+  
+  <Card title="For Scale" icon="up-caret">
+    **Start small, scale smart**
+    
+    Free Ollama for dev → OpenAI for production. No vendor lock-in, no rewrites.
+	</Card>
+  
+  <Card title="For Any S3 Storage" icon="star">
+    **Universal compatibility**
+    
+    AWS, MinIO, Cloudflare R2, Scaleway... Works with **any S3-compatible** storage.
+	</Card>
+</CardGrid>
+
+---
+
+## <span class="gradient-text">Real-World Use Cases</span>
+
+<Tabs>
+<TabItem label="📚 Product Docs" icon="document">
+
+<div style="background: rgba(59, 130, 246, 0.05); padding: 2rem; border-radius: 1rem; border-left: 4px solid var(--neon-blue);">
+
+**The Challenge**
+
+Your customers ask the same questions repeatedly. Support team searches through 500+ markdown files manually. Slow. Inefficient. Frustrating.
+
+**The Solution**
+
+<div style="background: rgba(59, 130, 246, 0.08); padding: 1.5rem; border-radius: 0.75rem; margin: 1rem 0;">
+  <div style="display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; justify-content: center;">
+    <span style="background: rgba(59, 130, 246, 0.2); padding: 0.5rem 1rem; border-radius: 0.5rem; font-weight: 600;">📄 Docs on S3</span>
+    <span style="color: var(--neon-blue); font-size: 1.5rem;">→</span>
+    <span style="background: rgba(59, 130, 246, 0.2); padding: 0.5rem 1rem; border-radius: 0.5rem; font-weight: 600;">🔍 Index with MCP</span>
+    <span style="color: var(--neon-blue); font-size: 1.5rem;">→</span>
+    <span style="background: rgba(59, 130, 246, 0.2); padding: 0.5rem 1rem; border-radius: 0.5rem; font-weight: 600;">💬 Claude/Cursor</span>
+  </div>
+  <div style="text-align: center; margin-top: 1rem; color: var(--neon-cyan); font-weight: 600; font-size: 1.1rem;">
+    ✨ Instant intelligent answers with sources
+  </div>
+</div>
+
+**The Result**
+
+✅ Support queries answered in **seconds**, not minutes  
+✅ **Exact documentation references** with every answer  
+✅ Team efficiency up **300%**
+
+</div>
+
+</TabItem>
+
+<TabItem label="🏢 Internal Wiki" icon="star">
+
+<div style="background: rgba(139, 92, 246, 0.05); padding: 2rem; border-radius: 1rem; border-left: 4px solid var(--neon-purple);">
+
+**The Challenge**
+
+Company knowledge scattered across folders. Outdated search. Employees can't find critical information quickly.
+
+**The Solution**
+
+<div style="background: rgba(139, 92, 246, 0.08); padding: 1.5rem; border-radius: 0.75rem; margin: 1rem 0;">
+  <div style="display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; justify-content: center;">
+    <span style="background: rgba(139, 92, 246, 0.2); padding: 0.5rem 1rem; border-radius: 0.5rem; font-weight: 600;">📁 Centralize in S3</span>
+    <span style="color: var(--neon-purple); font-size: 1.5rem;">→</span>
+    <span style="background: rgba(139, 92, 246, 0.2); padding: 0.5rem 1rem; border-radius: 0.5rem; font-weight: 600;">🔍 Index with MCP</span>
+    <span style="color: var(--neon-purple); font-size: 1.5rem;">→</span>
+    <span style="background: rgba(139, 92, 246, 0.2); padding: 0.5rem 1rem; border-radius: 0.5rem; font-weight: 600;">🤖 AI Search</span>
+  </div>
+  <div style="text-align: center; margin-top: 1rem; color: var(--neon-cyan); font-weight: 600; font-size: 1.1rem;">
+    ✨ "Find the deployment process for microservice X" → Works instantly!
+  </div>
+</div>
+
+**The Result**
+
+✅ Knowledge discovery time reduced by **80%**  
+✅ Onboarding new developers **4x faster**  
+✅ No more "who knows about X?" in Slack
+
+</div>
+
+</TabItem>
+
+<TabItem label="📖 API Docs" icon="puzzle">
+
+<div style="background: rgba(6, 182, 212, 0.05); padding: 2rem; border-radius: 1rem; border-left: 4px solid var(--neon-cyan);">
+
+**The Challenge**
+
+Developers struggle to find specific API endpoints. Examples buried in multiple files. Context-switching kills productivity.
+
+**The Solution**
+
+<div style="background: rgba(6, 182, 212, 0.08); padding: 1.5rem; border-radius: 0.75rem; margin: 1rem 0;">
+  <div style="display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; justify-content: center;">
+    <span style="background: rgba(6, 182, 212, 0.2); padding: 0.5rem 1rem; border-radius: 0.5rem; font-weight: 600;">📋 API Docs → S3</span>
+    <span style="color: var(--neon-cyan); font-size: 1.5rem;">→</span>
+    <span style="background: rgba(6, 182, 212, 0.2); padding: 0.5rem 1rem; border-radius: 0.5rem; font-weight: 600;">🔍 Index with MCP</span>
+    <span style="color: var(--neon-cyan); font-size: 1.5rem;">→</span>
+    <span style="background: rgba(6, 182, 212, 0.2); padding: 0.5rem 1rem; border-radius: 0.5rem; font-weight: 600;">💡 Natural Query</span>
+  </div>
+  <div style="text-align: center; margin-top: 1rem; color: var(--neon-cyan); font-weight: 600; font-size: 1.1rem;">
+    ✨ "Show me OAuth2 authentication with refresh tokens" → Exact code examples
+  </div>
+</div>
+
+**The Result**
+
+✅ API integration time cut in **half**  
+✅ **Zero** "where's the docs?" support tickets  
+✅ Developers **actually read** the documentation
+
+</div>
+
+</TabItem>
+
+<TabItem label="🎓 Education" icon="open-book">
+
+<div style="background: rgba(236, 72, 153, 0.05); padding: 2rem; border-radius: 1rem; border-left: 4px solid var(--neon-pink);">
+
+**The Challenge**
+
+Students need quick answers from course materials. Content spread across 50+ chapters. Search is keyword-only.
+
+**The Solution**
+
+<div style="background: rgba(236, 72, 153, 0.08); padding: 1.5rem; border-radius: 0.75rem; margin: 1rem 0;">
+  <div style="display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; justify-content: center;">
+    <span style="background: rgba(236, 72, 153, 0.2); padding: 0.5rem 1rem; border-radius: 0.5rem; font-weight: 600;">📚 Course Materials</span>
+    <span style="color: var(--neon-pink); font-size: 1.5rem;">→</span>
+    <span style="background: rgba(236, 72, 153, 0.2); padding: 0.5rem 1rem; border-radius: 0.5rem; font-weight: 600;">📝 Convert to MD → S3</span>
+    <span style="color: var(--neon-pink); font-size: 1.5rem;">→</span>
+    <span style="background: rgba(236, 72, 153, 0.2); padding: 0.5rem 1rem; border-radius: 0.5rem; font-weight: 600;">🤖 AI Tutor</span>
+  </div>
+  <div style="text-align: center; margin-top: 1rem; color: var(--neon-cyan); font-weight: 600; font-size: 1.1rem;">
+    ✨ "Explain photosynthesis from Chapter 3" → Answer with page references
+  </div>
+</div>
+
+**The Result**
+
+✅ Students find answers **10x faster**  
+✅ Contextual learning with **exact references**  
+✅ 24/7 AI-powered study assistant
+
+</div>
+
+</TabItem>
+</Tabs>
+
+---
+
+## <span class="gradient-text">3 Powerful MCP Tools</span>
+
+<Steps>
+
+1. **`search_documentation`**  
+   <div style="padding: 1rem; background: rgba(59, 130, 246, 0.05); border-radius: 0.5rem; margin-top: 0.5rem;">
+   Semantic search across all docs. Returns relevant chunks with **similarity scores** and sources.
+   </div>
+
+2. **`refresh_index`**  
+   <div style="padding: 1rem; background: rgba(139, 92, 246, 0.05); border-radius: 0.5rem; margin-top: 0.5rem;">
+   Sync your vector index with S3. **Incremental** or full reindex on demand.
+   </div>
+
+3. **`get_full_document`**  
+   <div style="padding: 1rem; background: rgba(6, 182, 212, 0.05); border-radius: 0.5rem; margin-top: 0.5rem;">
+   Retrieve complete files by S3 key. Perfect for **viewing full context** after search.
+   </div>
+
+</Steps>
+
+<Aside type="tip" title="Bonus: MCP Resources API">
+  Browse and read files directly without semantic search. Perfect for "show me the config file" type queries.
+</Aside>
+
+---
+
+## <span class="gradient-text">What You Get</span>
+
+<CardGrid>
+  <LinkCard 
+    title="🚀 Quick Start" 
+    description="Get running in 5 minutes with Docker or from source"
+    href="/S3-Documentation-MCP-Server/getting-started/quick-start/"
+  />
+  <LinkCard 
+    title="⚙️ Configuration" 
+    description="Environment variables, providers, sync modes, security"
+    href="/S3-Documentation-MCP-Server/configuration/environment-variables/"
+  />
+  <LinkCard 
+    title="🔧 Architecture" 
+    description="Understand how it works: components, data flow, design"
+    href="/S3-Documentation-MCP-Server/reference/architecture/"
+  />
+  <LinkCard 
+    title="📡 API Reference" 
+    description="Complete HTTP and MCP API docs with examples"
+    href="/S3-Documentation-MCP-Server/reference/api/"
+  />
+</CardGrid>
+
+---
+
+<div style="text-align: center; padding: 4rem 2rem; background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(139, 92, 246, 0.1), rgba(6, 182, 212, 0.1)); border-radius: 1.5rem; border: 1px solid rgba(59, 130, 246, 0.3); margin: 3rem 0; position: relative; overflow: hidden;">
+  
+  <div style="position: absolute; top: -50%; left: -50%; width: 200%; height: 200%; background: radial-gradient(circle, rgba(59, 130, 246, 0.1) 0%, transparent 70%); animation: rotate 20s linear infinite; pointer-events: none;"></div>
+  
+  <div style="position: relative; z-index: 1;">
+    <h2 style="font-size: 2.5rem; margin-bottom: 1rem;">
+      <span class="gradient-text glow-text">Ready to Transform Your Docs?</span>
+    </h2>
+    <p style="font-size: 1.25rem; opacity: 0.9; margin-bottom: 2.5rem; max-width: 600px; margin-left: auto; margin-right: auto;">
+      Join developers building AI-powered documentation systems in minutes, not months.
+    </p>
+    <div style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;">
+      <a href="/S3-Documentation-MCP-Server/getting-started/quick-start/" class="cta-primary" style="font-size: 1.25rem;">
+        🚀 Start Building Now
+      </a>
+      <a href="https://github.com/yoanbernabeu/S3-Documentation-MCP-Server" class="cta-secondary" style="font-size: 1.25rem;">
+        ⭐ Star on GitHub
+      </a>
+    </div>
+    
+    <div style="margin-top: 3rem; padding-top: 2rem; border-top: 1px solid rgba(59, 130, 246, 0.2);">
+      <div style="display: flex; gap: 2rem; justify-content: center; align-items: center; flex-wrap: wrap; font-size: 0.875rem; opacity: 0.7;">
+        <span>✓ MIT Licensed</span>
+        <span>✓ Open Source</span>
+        <span>✓ Free Forever</span>
+        <span>✓ Community Support</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<Aside type="caution">
+  **⚠️ Development Status**: This project is actively being developed. APIs may change. Not recommended for production yet. [Track progress on GitHub](https://github.com/yoanbernabeu/S3-Documentation-MCP-Server).
+</Aside>
+

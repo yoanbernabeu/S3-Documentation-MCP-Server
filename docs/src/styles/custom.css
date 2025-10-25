@@ -1,0 +1,1181 @@
+/* ============================================
+   S3 Documentation MCP - Custom Theme
+   Modern AI-Powered SaaS Design
+   Dark Mode Only
+   ============================================ */
+
+/* Force dark mode globally */
+:root {
+  color-scheme: dark only;
+}
+
+/* Prevent heading link icons from wrapping alone on mobile */
+h1, h2, h3, h4, h5, h6 {
+  display: inline-block;
+  width: 100%;
+}
+
+/* Keep link icon with heading text */
+.sl-markdown-content h2 .icon.icon-link,
+.sl-markdown-content h3 .icon.icon-link,
+.sl-markdown-content h4 .icon.icon-link,
+.sl-markdown-content h5 .icon.icon-link,
+.sl-markdown-content h6 .icon.icon-link {
+  display: inline-block;
+  white-space: nowrap;
+}
+
+/* Prevent orphan link icons */
+.sl-markdown-content h2 a,
+.sl-markdown-content h3 a,
+.sl-markdown-content h4 a,
+.sl-markdown-content h5 a,
+.sl-markdown-content h6 a {
+  display: inline;
+  white-space: nowrap;
+}
+
+:root, 
+:root[data-theme='dark'],
+:root[data-theme='light'],
+:root[data-theme='auto'] {
+  /* Softer Dark Theme - Better Readability */
+  --sl-color-bg: #1a1f35;
+  --sl-color-bg-nav: #1f2437;
+  --sl-color-bg-sidebar: #1f2437;
+  --sl-color-bg-inline-code: #2a3142;
+  
+  /* AI-Inspired Color Palette */
+  --sl-color-accent-low: #1a1f35;
+  --sl-color-accent: #5b8ef4;
+  --sl-color-accent-high: #7ba5f7;
+  
+  /* Gradient Colors */
+  --gradient-start: #3b82f6;
+  --gradient-mid: #8b5cf6;
+  --gradient-end: #06b6d4;
+  
+  /* Text Colors - Softer, No Pure White/Black */
+  --sl-color-text: #cbd5e1;
+  --sl-color-text-accent: #7ba5f7;
+  --sl-color-text-muted: #94a3b8;
+  --sl-color-white: #e0e7ef;
+  --sl-color-gray-1: #e0e7ef;
+  --sl-color-gray-2: #cbd5e1;
+  --sl-color-gray-3: #a8b4c5;
+  --sl-color-gray-4: #94a3b8;
+  --sl-color-gray-5: #2a3142;
+  --sl-color-gray-6: #1f2437;
+  
+  /* Border Colors */
+  --sl-color-hairline: #2d3548;
+  --sl-color-hairline-light: #3d4558;
+  --sl-color-hairline-shade: #2d3548;
+  
+  /* Neon Accents */
+  --neon-blue: #3b82f6;
+  --neon-purple: #8b5cf6;
+  --neon-cyan: #06b6d4;
+  --neon-pink: #ec4899;
+  
+  /* Shadows & Effects */
+  --glow-shadow: 0 0 20px rgba(59, 130, 246, 0.3);
+  --card-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  --card-shadow-hover: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
+/* ============================================
+   Hero Section - True Full Width Edge to Edge
+   ============================================ */
+
+.hero {
+  position: relative;
+  overflow: visible;
+  width: 100vw !important;
+  max-width: 100vw !important;
+  margin-left: calc(-50vw + 50%) !important;
+  margin-right: calc(-50vw + 50%) !important;
+  margin-top: -5rem !important;
+  padding: 5rem 0 2rem 0 !important;
+  min-height: auto;
+}
+
+.hero::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: 
+    radial-gradient(circle at 20% 50%, rgba(59, 130, 246, 0.15) 0%, transparent 50%),
+    radial-gradient(circle at 80% 80%, rgba(139, 92, 246, 0.15) 0%, transparent 50%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.hero .sl-flex {
+  position: relative;
+  z-index: 1;
+  max-width: 80rem;
+  margin: 0 auto;
+  padding: 3rem 2rem 2rem 2rem;
+  display: flex;
+  align-items: flex-start;
+  gap: 2rem;
+  flex-wrap: nowrap;
+  min-height: auto;
+}
+
+/* Hero content on the left - limited width to make room for chat */
+.hero .sl-flex > div:first-child {
+  flex: 1;
+  max-width: 100%;
+  min-width: 300px;
+  padding-top: 0;
+  padding-right: 32%;
+}
+
+.hero .sl-flex > div:first-child h1 {
+  font-size: 3rem !important;
+  line-height: 1.2 !important;
+  margin-bottom: 0.75rem !important;
+  word-break: keep-all !important;
+  hyphens: none !important;
+  white-space: normal !important;
+}
+
+.hero .sl-flex > div:first-child .tagline {
+  margin-bottom: 1rem !important;
+  font-size: 1.1rem !important;
+}
+
+/* Hero Actions - prevent overlap with nav */
+.hero .actions {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-top: 1.5rem;
+  margin-bottom: 1rem;
+  z-index: 5;
+  position: relative;
+}
+
+.hero .actions a {
+  z-index: 5;
+  position: relative;
+}
+
+@media (max-width: 1024px) {
+  .hero {
+    margin-top: 0 !important;
+    padding-top: 0 !important;
+    padding-bottom: 2rem !important;
+    min-height: auto;
+  }
+
+  .hero .sl-flex {
+    flex-direction: column;
+    align-items: center;
+    min-height: auto;
+    padding: 3rem 2rem 2rem 2rem;
+  }
+
+  .hero .sl-flex > div:first-child {
+    max-width: 100%;
+    padding-top: 0;
+    padding-right: 0 !important;
+    text-align: center;
+  }
+
+  .hero .sl-flex > div:first-child h1 {
+    font-size: 2.5rem !important;
+  }
+
+  .hero .actions {
+    justify-content: center;
+  }
+}
+
+/* Override Starlight's splash template constraints */
+[data-template="splash"] .sl-container {
+  max-width: 100% !important;
+  padding: 0 !important;
+  overflow-x: hidden !important;
+}
+
+[data-template="splash"] .content-panel {
+  max-width: 80rem !important;
+  margin: 0 auto !important;
+  padding: 0 2rem !important;
+}
+
+[data-template="splash"] .content-panel > * {
+  margin-top: 0 !important;
+}
+
+[data-template="splash"] .content-panel > *:first-child {
+  padding-top: 2rem !important;
+}
+
+main {
+  overflow-x: hidden !important;
+}
+
+/* Animated gradient text */
+.gradient-text {
+  background: linear-gradient(135deg, var(--neon-blue), var(--neon-purple), var(--neon-cyan));
+  background-size: 200% 200%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: gradientFlow 8s ease infinite;
+  font-weight: 800;
+  display: inline-block;
+}
+
+@keyframes gradientFlow {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+
+/* ============================================
+   Unified Card Style - Softer Backgrounds
+   ============================================ */
+
+.sl-card,
+article.sl-card {
+  background: rgba(31, 36, 55, 0.7) !important;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(91, 142, 244, 0.25) !important;
+  border-radius: 1rem !important;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.sl-card::before,
+article.sl-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, var(--neon-blue), var(--neon-purple), var(--neon-cyan));
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.sl-card:hover,
+article.sl-card:hover {
+  box-shadow: var(--card-shadow-hover), var(--glow-shadow);
+  border-color: var(--neon-blue) !important;
+  background: rgba(31, 36, 55, 0.9) !important;
+}
+
+.sl-card:hover::before,
+article.sl-card:hover::before {
+  opacity: 1;
+}
+
+/* Ensure card grid items have equal height */
+[class*="sl-container"] [class*="not-content"] article.sl-card {
+  height: 100%;
+}
+
+/* Override default Starlight card grid styles - Target specific cards */
+.card-grid .card {
+  background: rgba(31, 36, 55, 0.7) !important;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(91, 142, 244, 0.25) !important;
+  border-radius: 1rem !important;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.card-grid .card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, var(--neon-blue), var(--neon-purple), var(--neon-cyan));
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.card-grid .card:hover {
+  box-shadow: var(--card-shadow-hover), var(--glow-shadow);
+  border-color: var(--neon-blue) !important;
+  background: rgba(31, 36, 55, 0.9) !important;
+}
+
+.card-grid .card:hover::before {
+  opacity: 1;
+}
+
+/* Ensure card-grid itself has no background */
+.card-grid {
+  background: none !important;
+  align-items: stretch !important;
+}
+
+/* Ensure all cards in grid have same alignment */
+.card-grid > * {
+  display: flex;
+  align-items: stretch;
+}
+
+/* ============================================
+   CTA Buttons - Futuristic Style
+   ============================================ */
+
+.cta-primary {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 1rem 2rem;
+  background: linear-gradient(135deg, var(--neon-blue), var(--neon-purple));
+  color: white;
+  border-radius: 0.75rem;
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 1.125rem;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 14px 0 rgba(59, 130, 246, 0.39);
+  overflow: hidden;
+}
+
+.cta-primary::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  transition: left 0.5s ease;
+}
+
+.cta-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(59, 130, 246, 0.5);
+}
+
+.cta-primary:hover::before {
+  left: 100%;
+}
+
+.cta-secondary {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 1rem 2rem;
+  background: rgba(59, 130, 246, 0.1);
+  border: 2px solid var(--neon-blue);
+  color: var(--neon-blue);
+  border-radius: 0.75rem;
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 1.125rem;
+  transition: all 0.3s ease;
+}
+
+.cta-secondary:hover {
+  background: rgba(59, 130, 246, 0.2);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 14px 0 rgba(59, 130, 246, 0.25);
+}
+
+/* ============================================
+   Feature Cards with Icons
+   ============================================ */
+
+.feature-card {
+  position: relative;
+  padding: 2rem;
+  background: rgba(15, 23, 42, 0.8);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(59, 130, 246, 0.3);
+  border-radius: 1rem;
+  transition: all 0.3s ease;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.feature-card:hover {
+  border-color: var(--neon-blue);
+  background: rgba(31, 36, 55, 0.9);
+  box-shadow: var(--glow-shadow);
+}
+
+.feature-card h3 {
+  margin: 1rem 0;
+}
+
+.feature-card p {
+  flex-grow: 1;
+  margin-bottom: 1rem;
+}
+
+.feature-card a {
+  margin-top: auto;
+}
+
+.feature-icon {
+  font-size: 2.5rem;
+  margin-bottom: 0;
+  display: inline-block;
+  animation: float 3s ease-in-out infinite;
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-10px); }
+}
+
+.feature-content {
+  line-height: 1.7;
+}
+
+.feature-content strong {
+  color: var(--neon-blue);
+  font-weight: 600;
+}
+
+/* ============================================
+   Comparison Table - Modern Style
+   ============================================ */
+
+.comparison-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  margin: 2rem 0;
+  border-radius: 1rem;
+  overflow: hidden;
+  box-shadow: var(--card-shadow);
+}
+
+.comparison-table thead {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.2), rgba(139, 92, 246, 0.2));
+}
+
+.comparison-table th {
+  padding: 1rem;
+  text-align: left;
+  font-weight: 600;
+  color: var(--neon-blue);
+}
+
+.comparison-table td {
+  padding: 1rem;
+  border-top: 1px solid rgba(59, 130, 246, 0.1);
+}
+
+.comparison-table tbody tr {
+  transition: background 0.2s ease;
+}
+
+.comparison-table tbody tr:hover {
+  background: rgba(59, 130, 246, 0.05);
+}
+
+/* ============================================
+   Status Badges - Tech Style
+   ============================================ */
+
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  border-radius: 9999px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  border: 1px solid;
+  position: relative;
+  overflow: hidden;
+}
+
+.status-badge::before {
+  content: '';
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  left: 0.75rem;
+  animation: pulse 2s ease infinite;
+}
+
+.badge-success {
+  background: rgba(34, 197, 94, 0.1);
+  border-color: #22c55e;
+  color: #22c55e;
+}
+
+.badge-success::before {
+  background: #22c55e;
+}
+
+.badge-warning {
+  background: rgba(251, 191, 36, 0.1);
+  border-color: #fbbf24;
+  color: #fbbf24;
+}
+
+.badge-warning::before {
+  background: #fbbf24;
+}
+
+.badge-info {
+  background: rgba(59, 130, 246, 0.1);
+  border-color: var(--neon-blue);
+  color: var(--neon-blue);
+}
+
+.badge-info::before {
+  background: var(--neon-blue);
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+/* ============================================
+   Code Blocks - Enhanced
+   ============================================ */
+
+pre {
+  border: 1px solid rgba(59, 130, 246, 0.2) !important;
+  border-radius: 0.75rem !important;
+  box-shadow: var(--card-shadow) !important;
+  position: relative;
+}
+
+pre::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, var(--neon-blue), var(--neon-purple), var(--neon-cyan));
+}
+
+/* ============================================
+   Tabs - Modern Design
+   ============================================ */
+
+.sl-tabs {
+  border-radius: 1rem;
+  overflow: hidden;
+  background: rgba(31, 36, 55, 0.5);
+  backdrop-filter: blur(10px);
+}
+
+.sl-tabs [role="tab"] {
+  position: relative;
+  transition: all 0.3s ease;
+}
+
+.sl-tabs [role="tab"][aria-selected="true"] {
+  color: var(--neon-blue);
+}
+
+.sl-tabs [role="tab"][aria-selected="true"]::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, var(--neon-blue), var(--neon-purple));
+}
+
+/* ============================================
+   Links - Enhanced Hover
+   ============================================ */
+
+.sl-link-card {
+  transition: all 0.3s ease;
+  border: 1px solid rgba(59, 130, 246, 0.2);
+}
+
+.sl-link-card:hover {
+  border-color: var(--neon-blue);
+  box-shadow: var(--glow-shadow);
+  transform: translateX(4px);
+}
+
+/* ============================================
+   Aside/Callouts - Enhanced
+   ============================================ */
+
+.starlight-aside {
+  border-radius: 0.75rem;
+  border-left: 4px solid var(--neon-blue);
+  background: rgba(59, 130, 246, 0.05);
+  backdrop-filter: blur(10px);
+}
+
+.starlight-aside--tip {
+  border-left-color: var(--neon-cyan);
+  background: rgba(6, 182, 212, 0.05);
+}
+
+.starlight-aside--caution {
+  border-left-color: var(--neon-pink);
+  background: rgba(236, 72, 153, 0.05);
+}
+
+/* ============================================
+   Search Bar - Futuristic
+   ============================================ */
+
+.search-input {
+  border: 1px solid rgba(59, 130, 246, 0.3);
+  border-radius: 0.75rem;
+  transition: all 0.3s ease;
+}
+
+.search-input:focus {
+  border-color: var(--neon-blue);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+/* ============================================
+   Sidebar - Enhanced
+   ============================================ */
+
+.sidebar-content {
+  border-right: 1px solid rgba(59, 130, 246, 0.1);
+}
+
+.sidebar-content a {
+  transition: all 0.2s ease;
+  border-radius: 0.5rem;
+}
+
+.sidebar-content a:hover {
+  background: rgba(59, 130, 246, 0.1);
+  padding-left: 1rem;
+}
+
+.sidebar-content a[aria-current="page"] {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.2), rgba(139, 92, 246, 0.2));
+  border-left: 3px solid var(--neon-blue);
+}
+
+/* ============================================
+   Responsive Enhancements
+   ============================================ */
+
+@media (max-width: 768px) {
+  .cta-primary, .cta-secondary {
+    padding: 0.875rem 1.5rem;
+    font-size: 1rem;
+  }
+  
+  .feature-icon {
+    font-size: 2rem;
+  }
+}
+
+/* ============================================
+   Scroll Animations
+   ============================================ */
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-on-scroll {
+  animation: fadeInUp 0.6s ease forwards;
+}
+
+/* ============================================
+   Dark Mode Specific (Forced) - Softer Backgrounds
+   ============================================ */
+
+body {
+  background: #1a1f35;
+}
+
+.hero {
+  background: 
+    radial-gradient(circle at 20% 50%, rgba(59, 130, 246, 0.1) 0%, transparent 50%),
+    radial-gradient(circle at 80% 80%, rgba(139, 92, 246, 0.1) 0%, transparent 50%),
+    #1a1f35;
+}
+
+/* Override any light mode styles */
+[data-theme="light"],
+[data-theme="auto"] {
+  display: none !important;
+}
+
+/* Hide theme selector */
+starlight-theme-select,
+.theme-select {
+  display: none !important;
+}
+
+/* ============================================
+   Custom Utilities
+   ============================================ */
+
+.glow-text {
+  text-shadow: 0 0 20px rgba(59, 130, 246, 0.5);
+}
+
+.blur-backdrop {
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+.neon-border {
+  border: 1px solid var(--neon-blue);
+  box-shadow: 0 0 10px rgba(59, 130, 246, 0.3);
+}
+
+/* ============================================
+   Hero Demo - Chat Simulation
+   ============================================ */
+
+.hero-demo-container {
+  position: absolute;
+  right: 2rem;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 450px;
+  max-width: 30%;
+  z-index: 10;
+  max-height: 550px;
+}
+
+/* On mobile, position below hero */
+@media (max-width: 1024px) {
+  .hero-demo-container {
+    position: static;
+    transform: none !important;
+    max-width: 100%;
+    width: 100%;
+    margin-top: 2rem;
+    max-height: 600px;
+  }
+
+  .hero {
+    padding-bottom: 2rem !important;
+  }
+}
+
+.chat-window {
+  background: rgba(20, 25, 40, 0.95);
+  backdrop-filter: blur(20px);
+  border-radius: 1rem;
+  overflow: hidden;
+  box-shadow: 
+    0 20px 60px rgba(0, 0, 0, 0.4),
+    0 0 0 1px rgba(59, 130, 246, 0.2);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.chat-window:hover {
+  transform: translateY(-4px);
+  box-shadow: 
+    0 25px 70px rgba(0, 0, 0, 0.5),
+    0 0 0 1px rgba(59, 130, 246, 0.4),
+    0 0 40px rgba(59, 130, 246, 0.2);
+}
+
+.chat-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 1rem;
+  background: rgba(15, 20, 35, 0.8);
+  border-bottom: 1px solid rgba(59, 130, 246, 0.2);
+  gap: 0.5rem;
+}
+
+.chat-header-left {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.chat-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  opacity: 0.7;
+  transition: opacity 0.3s ease;
+  flex-shrink: 0;
+  display: inline-block;
+  vertical-align: middle;
+  line-height: 1;
+  margin: 0;
+  padding: 0;
+}
+
+.chat-dot-red { 
+  background: #ff5f56;
+}
+
+.chat-dot-yellow { 
+  background: #ffbd2e;
+}
+
+.chat-dot-green { 
+  background: #27c93f;
+}
+
+.chat-window:hover .chat-dot {
+  opacity: 1;
+}
+
+.chat-header-title {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: var(--sl-color-text);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  max-width: 50%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.chat-title-icon {
+  font-size: 1.2rem;
+}
+
+.chat-header-right {
+  font-size: 0.85rem;
+}
+
+.status-indicator {
+  background: rgba(39, 201, 63, 0.15);
+  padding: 0.25rem 0.75rem;
+  border-radius: 1rem;
+  font-size: 0.8rem;
+  color: #27c93f;
+  border: 1px solid rgba(39, 201, 63, 0.3);
+}
+
+.chat-messages {
+  padding: 1.5rem;
+  height: 450px;
+  max-height: 450px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  scroll-behavior: smooth;
+}
+
+/* Custom scrollbar */
+.chat-messages::-webkit-scrollbar {
+  width: 8px;
+}
+
+.chat-messages::-webkit-scrollbar-track {
+  background: rgba(31, 36, 55, 0.5);
+  border-radius: 10px;
+}
+
+.chat-messages::-webkit-scrollbar-thumb {
+  background: rgba(59, 130, 246, 0.5);
+  border-radius: 10px;
+}
+
+.chat-messages::-webkit-scrollbar-thumb:hover {
+  background: rgba(59, 130, 246, 0.7);
+}
+
+.message {
+  display: flex;
+  gap: 0.75rem;
+  animation: fadeInUp 0.5s ease-out;
+}
+
+.user-message {
+  flex-direction: row-reverse;
+}
+
+.message-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
+  flex-shrink: 0;
+  background: rgba(59, 130, 246, 0.15);
+  border: 1px solid rgba(59, 130, 246, 0.3);
+}
+
+.user-message .message-avatar {
+  background: rgba(139, 92, 246, 0.15);
+  border: 1px solid rgba(139, 92, 246, 0.3);
+}
+
+.message-content {
+  flex: 1;
+  max-width: 80%;
+}
+
+.message-text {
+  background: rgba(31, 36, 55, 0.8);
+  padding: 1rem 1.25rem;
+  border-radius: 1rem;
+  border: 1px solid rgba(59, 130, 246, 0.2);
+  line-height: 1.6;
+}
+
+.user-message .message-text {
+  background: rgba(139, 92, 246, 0.15);
+  border: 1px solid rgba(139, 92, 246, 0.3);
+  text-align: right;
+}
+
+.message-text p {
+  margin: 0 0 0.75rem 0;
+}
+
+.message-text p:last-child {
+  margin-bottom: 0;
+}
+
+.message-text ul {
+  margin: 0.5rem 0;
+  padding-left: 1.5rem;
+}
+
+.message-text li {
+  margin: 0.5rem 0;
+}
+
+.message-text code {
+  background: rgba(59, 130, 246, 0.15);
+  padding: 0.15rem 0.5rem;
+  border-radius: 0.25rem;
+  font-size: 0.9em;
+  color: var(--neon-cyan);
+  border: 1px solid rgba(59, 130, 246, 0.2);
+}
+
+.thinking-indicator {
+  display: flex;
+  align-items: center;
+  padding: 0.75rem 1rem;
+  background: rgba(139, 92, 246, 0.1);
+  border-radius: 0.75rem;
+  border: 1px solid rgba(139, 92, 246, 0.2);
+  color: var(--neon-purple);
+  font-weight: 500;
+  font-size: 0.9rem;
+}
+
+.thinking-dots {
+  display: flex;
+  gap: 0.25rem;
+  align-items: center;
+}
+
+.thinking-dots span {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--neon-purple);
+  animation: thinkingBounce 1.4s infinite ease-in-out;
+}
+
+.thinking-dots span:nth-child(1) {
+  animation-delay: -0.32s;
+}
+
+.thinking-dots span:nth-child(2) {
+  animation-delay: -0.16s;
+}
+
+@keyframes thinkingBounce {
+  0%, 80%, 100% {
+    opacity: 0.3;
+    transform: scale(0.8);
+  }
+  40% {
+    opacity: 1;
+    transform: scale(1.2);
+  }
+}
+
+.mcp-searching {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem 1.25rem;
+  background: rgba(59, 130, 246, 0.1);
+  border-radius: 1rem;
+  border: 1px solid rgba(59, 130, 246, 0.3);
+  color: var(--neon-cyan);
+  font-weight: 500;
+}
+
+.search-spinner {
+  width: 18px;
+  height: 18px;
+  border: 2px solid rgba(59, 130, 246, 0.3);
+  border-top-color: var(--neon-blue);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.mcp-response {
+  animation: fadeIn 0.5s ease-out;
+}
+
+.message-sources {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid rgba(59, 130, 246, 0.2);
+}
+
+.source-label {
+  font-size: 0.85rem;
+  color: var(--sl-color-text-muted);
+  margin-bottom: 0.5rem;
+  font-weight: 600;
+}
+
+.source-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.source-tag {
+  background: rgba(6, 182, 212, 0.15);
+  color: var(--neon-cyan);
+  padding: 0.25rem 0.75rem;
+  border-radius: 0.5rem;
+  font-size: 0.8rem;
+  border: 1px solid rgba(6, 182, 212, 0.3);
+  font-family: 'Fira Code', monospace;
+}
+
+/* Animations */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* Additional responsive for smaller screens */
+@media (max-width: 768px) {
+  .chat-header {
+    flex-wrap: nowrap;
+    gap: 0.25rem;
+    padding: 0.5rem 0.75rem;
+  }
+
+  .chat-header-title {
+    font-size: 0.75rem;
+    max-width: 40%;
+    position: static;
+    transform: none;
+    flex: 1;
+    justify-content: center;
+  }
+
+  .chat-title-icon {
+    font-size: 1rem;
+  }
+
+  .status-indicator {
+    font-size: 0.7rem;
+    padding: 0.2rem 0.5rem;
+    white-space: nowrap;
+  }
+
+  .chat-header-left {
+    gap: 0.25rem;
+  }
+
+  .chat-dot {
+    width: 10px;
+    height: 10px;
+    display: inline-block;
+    flex-shrink: 0;
+    vertical-align: middle;
+    line-height: 1;
+    margin: 0;
+    padding: 0;
+  }
+  
+  .chat-messages {
+    padding: 1rem;
+    height: 400px;
+    max-height: 400px;
+  }
+  
+  .message-content {
+    max-width: 85%;
+  }
+  
+  .message-text {
+    padding: 0.75rem 1rem;
+    font-size: 0.9rem;
+  }
+  
+  .message-text pre {
+    font-size: 0.75rem;
+  }
+  
+  .hero .sl-flex {
+    padding: 2rem 1rem 2rem 1rem;
+  }
+  
+  .hero-demo-container {
+    max-height: 500px;
+  }
+}
+

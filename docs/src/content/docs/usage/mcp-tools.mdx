@@ -1,0 +1,320 @@
+---
+title: MCP Tools
+description: Learn about the three MCP tools available in S3 Documentation MCP
+---
+
+The S3 Documentation MCP server exposes three powerful tools for semantic search and documentation management.
+
+## search_documentation
+
+Performs semantic search across your indexed documentation.
+
+### Parameters
+
+```typescript
+{
+  query: string;        // Your search query
+  max_results?: number; // Number of results (default: 4)
+}
+```
+
+### Example Request
+
+```json
+{
+  "query": "How to configure S3 credentials?",
+  "max_results": 4
+}
+```
+
+### Example Response
+
+```json
+{
+  "results": [
+    {
+      "content": "To configure S3 credentials, set the following environment variables:\n\nS3_ACCESS_KEY_ID=your-access-key\nS3_SECRET_ACCESS_KEY=your-secret-key...",
+      "metadata": {
+        "source": "docs/configuration.md",
+        "chunk_index": 2
+      },
+      "score": 0.92
+    },
+    {
+      "content": "AWS S3 credentials can be obtained from the AWS IAM console...",
+      "metadata": {
+        "source": "docs/aws-setup.md",
+        "chunk_index": 0
+      },
+      "score": 0.87
+    }
+  ],
+  "query": "How to configure S3 credentials?",
+  "total_results": 2
+}
+```
+
+### Response Fields
+
+- **content**: The relevant text chunk from your documentation
+- **metadata.source**: S3 key of the source document
+- **metadata.chunk_index**: Position of this chunk in the document
+- **score**: Similarity score (0-1, higher is better)
+- **total_results**: Number of results returned
+
+### Use Cases
+
+- **Question Answering**: "How do I enable authentication?"
+- **Feature Discovery**: "What embedding providers are supported?"
+- **Troubleshooting**: "Fix connection errors"
+- **Code Examples**: "Show me how to configure Docker"
+
+### Best Practices
+
+#### Write Natural Queries
+
+✅ **Good:**
+- "How to configure S3 credentials"
+- "What is the difference between Ollama and OpenAI?"
+- "Troubleshoot sync errors"
+
+❌ **Bad:**
+- "S3"
+- "configure"
+- "credentials environment variables"
+
+#### Adjust max_results
+
+- **Default (4)**: Good for most queries
+- **2-3**: When you want only the most relevant results
+- **6-8**: For broader exploration or complex queries
+
+#### Check Scores
+
+- **0.8-1.0**: Excellent match, highly relevant
+- **0.6-0.8**: Good match, likely relevant
+- **< 0.6**: Weak match, may not be relevant
+
+## refresh_index
+
+Synchronizes the vector index with your S3 bucket.
+
+### Parameters
+
+```typescript
+{
+  force?: boolean; // true = full reindex, false = incremental (default)
+}
+```
+
+### Example Requests
+
+**Incremental Sync (Default):**
+```json
+{
+  "force": false
+}
+```
+
+Only processes new, modified, or deleted files based on ETag comparison.
+
+**Full Reindex:**
+```json
+{
+  "force": true
+}
+```
+
+Rebuilds the entire index from scratch. Use after configuration changes.
+
+### Example Response
+
+```json
+{
+  "status": "success",
+  "message": "Index synchronized successfully",
+  "stats": {
+    "new_files": 3,
+    "modified_files": 2,
+    "deleted_files": 1,
+    "total_documents": 125,
+    "sync_time_seconds": 8.3
+  }
+}
+```
+
+### When to Use
+
+#### Incremental Sync (`force: false`)
+
+Use when:
+- ✅ Documentation has been updated in S3
+- ✅ You want to add newly uploaded files
+- ✅ You need to remove deleted files
+- ✅ Regular maintenance
+
+#### Full Reindex (`force: true`)
+
+Use when:
+- ✅ Switching embedding providers (Ollama ↔ OpenAI)
+- ✅ Changing chunk size or overlap settings
+- ✅ Suspecting index corruption
+- ✅ After significant configuration changes
+
+:::tip
+With `SYNC_MODE=startup` (default), the server automatically syncs on startup. You rarely need to call `refresh_index` manually unless:
+- You're using `SYNC_MODE=manual`
+- Documentation changed while the server is running
+- You want to force a full rebuild
+:::
+
+## get_full_document
+
+Retrieves the complete content of a specific Markdown file from S3.
+
+### Parameters
+
+```typescript
+{
+  s3_key: string; // S3 key of the document (e.g., "docs/guide.md")
+}
+```
+
+### Example Request
+
+```json
+{
+  "s3_key": "docs/configuration.md"
+}
+```
+
+### Example Response
+
+```json
+{
+  "s3_key": "docs/configuration.md",
+  "content": "# Configuration Guide\n\nThis guide explains how to configure...",
+  "metadata": {
+    "size_bytes": 5432,
+    "last_modified": "2025-10-20T14:30:00.000Z",
+    "etag": "\"abc123def456\"",
+    "chunk_count": 6
+  }
+}
+```
+
+### Response Fields
+
+- **s3_key**: Full S3 key of the document
+- **content**: Complete Markdown content (not chunked)
+- **metadata.size_bytes**: File size in bytes
+- **metadata.last_modified**: Last modification timestamp
+- **metadata.etag**: S3 ETag for change detection
+- **metadata.chunk_count**: Number of chunks in the index (if indexed)
+
+### Use Cases
+
+#### 1. View Full Context
+
+After finding a relevant chunk via `search_documentation`:
+
+```json
+// 1. Search for information
+{
+  "query": "How to configure Docker?"
+}
+
+// Response includes: "source": "docs/installation.md"
+
+// 2. Get full document for complete context
+{
+  "s3_key": "docs/installation.md"
+}
+```
+
+#### 2. Export Documentation
+
+Retrieve complete documents for offline viewing or external integrations.
+
+#### 3. Validate Search Results
+
+Check the full document to understand the context around a search result.
+
+#### 4. Browse Documentation
+
+Navigate through your documentation by retrieving complete files.
+
+### Error Handling
+
+#### Document Not Found
+
+```json
+{
+  "error": "Document not found",
+  "s3_key": "docs/missing.md",
+  "message": "The file may have been deleted from S3. Run refresh_index to synchronize."
+}
+```
+
+**Solution:** Run `refresh_index` to update the index.
+
+#### Invalid S3 Key
+
+```json
+{
+  "error": "Invalid S3 key",
+  "message": "S3 key must be a valid path"
+}
+```
+
+**Solution:** Check the S3 key format (e.g., `docs/file.md`, not `/docs/file.md`).
+
+## Tool Comparison
+
+| Tool | Purpose | When to Use |
+|------|---------|-------------|
+| **search_documentation** | Semantic search | Find relevant information |
+| **refresh_index** | Sync with S3 | Update index with changes |
+| **get_full_document** | Retrieve complete file | View full context |
+
+## Common Workflows
+
+### 1. Find and Read
+
+**Flow:**
+```
+search_documentation → Find relevant source → get_full_document → Read complete context
+```
+
+**Steps:**
+1. Search for information
+2. Identify the source file from results
+3. Retrieve the full document for complete context
+
+### 2. Update and Search
+
+**Flow:**
+```
+Update docs in S3 → refresh_index → search_documentation → Find updated content
+```
+
+**Steps:**
+1. Update documentation in S3
+2. Refresh the index
+3. Search for new or updated content
+
+### 3. Maintenance
+
+**Flow:**
+```
+Regular schedule → refresh_index → Keep index fresh
+```
+
+**Note:** Periodic refresh to keep the index synchronized with S3 (or use `SYNC_MODE=periodic`).
+
+## Next Steps
+
+- [Learn about MCP Resources](/S3-Documentation-MCP-Server/usage/mcp-resources/)
+- [Configure your MCP client](/S3-Documentation-MCP-Server/usage/client-configuration/)
+- [Understand the architecture](/S3-Documentation-MCP-Server/reference/architecture/)
+

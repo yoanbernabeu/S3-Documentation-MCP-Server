@@ -1,0 +1,181 @@
+---
+title: Installation
+description: Detailed installation instructions for S3 Documentation MCP
+---
+
+This guide covers different installation methods for the S3 Documentation MCP server.
+
+## Prerequisites
+
+Before installing, ensure you have:
+
+### Required
+
+- **S3-compatible storage** with credentials (AWS S3, MinIO, Scaleway, etc.)
+- One of the following:
+  - **Docker** (recommended) - [Install Docker](https://docs.docker.com/get-docker/)
+  - **Node.js >= 18** - [Install Node.js](https://nodejs.org/)
+
+### Embedding Provider (choose one)
+
+Choose your preferred embedding provider:
+
+#### Option 1: Ollama (Local, Free)
+
+**Recommended for**: Local development, offline usage, privacy-conscious deployments
+
+1. Install Ollama from [https://ollama.ai](https://ollama.ai)
+2. Pull the embedding model:
+   ```bash
+   ollama pull nomic-embed-text
+   ```
+
+**Pros:**
+- ✅ Free, unlimited usage
+- ✅ All data stays local
+- ✅ Works offline
+- ✅ Fast local API calls
+
+**Cons:**
+- ⚠️ Requires local resources (CPU/GPU)
+- ⚠️ Slightly lower accuracy than cloud models
+
+#### Option 2: OpenAI (Cloud)
+
+**Recommended for**: Production deployments, multilingual content, maximum accuracy
+
+1. Get an API key from [OpenAI Platform](https://platform.openai.com/api-keys)
+2. Add credits to your account (very affordable: ~$0.00002/1K tokens)
+
+**Pros:**
+- ✅ State-of-the-art accuracy
+- ✅ Excellent multilingual support
+- ✅ No local resources needed
+- ✅ Fast API responses
+
+**Cons:**
+- ⚠️ Requires API key and credits
+- ⚠️ Data sent to OpenAI servers
+
+## Installation Methods
+
+### Method 1: Docker (Recommended)
+
+Pull the official image from Docker Hub:
+
+```bash
+docker pull yoanbernabeu/s3-doc-mcp:latest
+```
+
+Or build from source:
+
+```bash
+git clone https://github.com/yoanbernabeu/S3-Documentation-MCP-Server.git
+cd S3-Documentation-MCP-Server
+docker build -t s3-doc-mcp .
+```
+
+### Method 2: Docker Compose
+
+Create a `docker-compose.yml` file or use the provided one:
+
+```yaml
+version: '3.8'
+
+services:
+  s3-doc-mcp:
+    image: yoanbernabeu/s3-doc-mcp:latest
+    container_name: s3-doc-mcp
+    ports:
+      - "3000:3000"
+    env_file:
+      - .env
+    environment:
+      - OLLAMA_BASE_URL=http://host.docker.internal:11434
+    volumes:
+      - ./data:/app/data
+    restart: unless-stopped
+```
+
+Run with:
+
+```bash
+docker compose up -d
+```
+
+### Method 3: From Source
+
+Clone the repository:
+
+```bash
+git clone https://github.com/yoanbernabeu/S3-Documentation-MCP-Server.git
+cd S3-Documentation-MCP-Server
+```
+
+Install dependencies:
+
+```bash
+npm install
+```
+
+Build and start:
+
+```bash
+# Production
+npm run build
+npm start
+
+# Development
+npm run dev
+```
+
+## Configuration
+
+After installation, you need to configure your environment variables:
+
+1. Copy the example configuration:
+   ```bash
+   cp env.example .env
+   ```
+
+2. Edit `.env` with your S3 credentials and settings
+
+3. See the [Environment Variables](/S3-Documentation-MCP-Server/configuration/environment-variables/) page for detailed configuration options.
+
+## Verification
+
+Test that your server is running:
+
+```bash
+curl http://localhost:3000/health
+```
+
+You should see a successful health check response.
+
+## Troubleshooting
+
+### Docker Container Won't Start
+
+- Check logs: `docker logs s3-doc-mcp`
+- Verify `.env` file exists and contains valid credentials
+- Ensure port 3000 is not already in use
+
+### Ollama Connection Issues
+
+- Verify Ollama is running: `ollama list`
+- Check the `OLLAMA_BASE_URL` in your `.env` file
+- For Docker, use `http://host.docker.internal:11434`
+- For local installation, use `http://localhost:11434`
+
+### S3 Connection Issues
+
+- Verify your S3 credentials are correct
+- Check the bucket name and region
+- For non-AWS S3, ensure `S3_ENDPOINT` is set correctly
+
+## Next Steps
+
+- [Configure environment variables](/S3-Documentation-MCP-Server/configuration/environment-variables/)
+- [Choose your embedding provider](/S3-Documentation-MCP-Server/configuration/embedding-providers/)
+- [Connect to your MCP client](/S3-Documentation-MCP-Server/usage/client-configuration/)
+

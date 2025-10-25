@@ -1,0 +1,297 @@
+---
+title: Security & Authentication
+description: Secure your S3 Documentation MCP server with API key authentication
+---
+
+By default, the S3 Documentation MCP server runs in **open access mode** for easy local development. For shared or remote deployments, enable API key authentication.
+
+## Authentication Overview
+
+### Open Access (Default)
+
+```bash
+ENABLE_AUTH=false
+```
+
+- ✅ No authentication required
+- ✅ Perfect for local development
+- ⚠️ **Not recommended** for shared networks or remote access
+
+### API Key Authentication
+
+```bash
+ENABLE_AUTH=true
+MCP_API_KEY=your-secret-key-here
+```
+
+- ✅ All endpoints require valid API key (except `/health`)
+- ✅ Supports multiple authentication methods
+- ✅ Secure for shared/remote deployments
+
+## Enabling Authentication
+
+### 1. Generate a Strong API Key
+
+Use a cryptographically secure random key:
+
+```bash
+# macOS/Linux
+openssl rand -hex 32
+
+# Output example:
+# 3f7a8b2c9d4e1f6g8h5i7j9k0l2m3n4o5p6q7r8s9t0u1v2w3x4y5z6a7b8c9d0
+```
+
+Or use a password manager to generate a strong random string.
+
+### 2. Configure Environment
+
+Edit your `.env` file:
+
+```bash
+# Enable authentication
+ENABLE_AUTH=true
+
+# Set your API key
+MCP_API_KEY=3f7a8b2c9d4e1f6g8h5i7j9k0l2m3n4o5p6q7r8s9t0u1v2w3x4y5z6a7b8c9d0
+```
+
+### 3. Restart the Server
+
+```bash
+# Docker Compose
+docker-compose restart
+
+# From source
+npm start
+```
+
+## Using Authentication
+
+### Method 1: Authorization Header (Recommended)
+
+Send the API key in the `Authorization` header as a Bearer token:
+
+```bash
+curl -H "Authorization: Bearer your-secret-key" \
+  http://localhost:3000/mcp
+```
+
+**Why recommended?**
+- ✅ More secure (not logged in URLs)
+- ✅ Standard HTTP authentication pattern
+- ✅ Not visible in browser history or server logs
+
+### Method 2: Query Parameter
+
+Send the API key as a URL parameter:
+
+```bash
+curl "http://localhost:3000/mcp?api_key=your-secret-key"
+```
+
+**Use when:**
+- Browser-based testing
+- Tools that don't support custom headers
+- Quick debugging
+
+⚠️ **Note:** Query parameters appear in logs and browser history.
+
+## MCP Client Configuration
+
+### Cursor
+
+Edit `~/.cursor/mcp.json`:
+
+```json
+{
+  "mcpServers": {
+    "doc": {
+      "type": "streamable-http",
+      "url": "http://127.0.0.1:3000/mcp",
+      "headers": {
+        "Authorization": "Bearer your-secret-key"
+      },
+      "note": "S3 Documentation RAG Server with authentication"
+    }
+  }
+}
+```
+
+### Claude Desktop
+
+Edit your Claude Desktop configuration file:
+
+- **macOS**: `~/Library/Application Support/Claude/claude_desktop_config.json`
+- **Windows**: `%APPDATA%/Claude/claude_desktop_config.json`
+
+```json
+{
+  "mcpServers": {
+    "doc": {
+      "type": "streamable-http",
+      "url": "http://127.0.0.1:3000/mcp",
+      "headers": {
+        "Authorization": "Bearer your-secret-key"
+      },
+      "note": "S3 Documentation RAG Server with authentication"
+    }
+  }
+}
+```
+
+## Protected Endpoints
+
+When authentication is enabled:
+
+### Protected
+- `POST /mcp` - MCP protocol endpoint
+- All MCP tools (`search_documentation`, `refresh_index`, `get_full_document`)
+- All MCP resources (`resources/list`, `resources/read`)
+
+### Public (No Auth Required)
+- `GET /health` - Health check endpoint
+
+## Error Responses
+
+### Missing API Key
+
+```json
+{
+  "error": "Unauthorized",
+  "message": "Missing API key"
+}
+```
+
+**HTTP Status:** 401 Unauthorized
+
+### Invalid API Key
+
+```json
+{
+  "error": "Unauthorized",
+  "message": "Invalid API key"
+}
+```
+
+**HTTP Status:** 401 Unauthorized
+
+## Best Practices
+
+### API Key Management
+
+- ✅ Use strong, randomly generated keys (32+ characters)
+- ✅ Store keys securely (e.g., in environment variables, not in code)
+- ✅ Rotate keys periodically
+- ✅ Use different keys for different environments (dev, staging, prod)
+- ❌ Never commit keys to version control
+- ❌ Never share keys in plain text (email, chat, etc.)
+
+### Deployment Strategies
+
+**Local Development:**
+```bash
+ENABLE_AUTH=false
+```
+No need for authentication on localhost.
+
+**Shared Network (Office, VPN):**
+```bash
+ENABLE_AUTH=true
+MCP_API_KEY=<strong-random-key>
+```
+Protect against unauthorized access from the network.
+
+**Remote/Public Deployment:**
+```bash
+ENABLE_AUTH=true
+MCP_API_KEY=<strong-random-key>
+```
+**Always** enable authentication for internet-facing deployments.
+
+### Additional Security Layers
+
+While API key authentication provides basic security, consider these additional measures for production:
+
+1. **HTTPS/TLS**: Use a reverse proxy (nginx, Caddy) with SSL certificates
+2. **Rate Limiting**: Implement rate limiting at the proxy level
+3. **IP Whitelisting**: Restrict access to known IP addresses
+4. **Network Isolation**: Run in a private VPC or behind a firewall
+5. **Monitoring**: Log authentication attempts and alert on failures
+
+## Example Configurations
+
+### Development
+
+```bash
+ENABLE_AUTH=false
+```
+
+### Staging
+
+```bash
+ENABLE_AUTH=true
+MCP_API_KEY=staging-3f7a8b2c9d4e1f6g8h5i7j9k0l2m3n4o
+```
+
+### Production
+
+```bash
+ENABLE_AUTH=true
+MCP_API_KEY=prod-5p6q7r8s9t0u1v2w3x4y5z6a7b8c9d0e1f2g3h4i5j6k7
+```
+
+## Troubleshooting
+
+### "Missing API key" Error
+
+**Cause:** Authentication is enabled but no API key was provided.
+
+**Solution:**
+- Add `Authorization: Bearer <key>` header
+- Or append `?api_key=<key>` to the URL
+- Check MCP client configuration
+
+### "Invalid API key" Error
+
+**Cause:** The provided API key doesn't match the configured key.
+
+**Solution:**
+- Verify the key in `.env` matches the one in your request
+- Check for typos or extra spaces
+- Ensure the key wasn't truncated
+- Restart the server after changing `.env`
+
+### Authentication Works in curl but Not in MCP Client
+
+**Cause:** MCP client configuration might be incorrect.
+
+**Solution:**
+- Verify the `headers` section in your MCP config
+- Ensure the key is correctly formatted
+- Restart the MCP client after config changes
+
+## Health Check (No Auth)
+
+The `/health` endpoint is always accessible without authentication, useful for monitoring:
+
+```bash
+# Works even with ENABLE_AUTH=true
+curl http://localhost:3000/health
+```
+
+Response:
+```json
+{
+  "status": "healthy",
+  "timestamp": "2025-10-25T10:30:00.000Z",
+  "version": "0.0.0"
+}
+```
+
+## Next Steps
+
+- [Learn about MCP tools](/S3-Documentation-MCP-Server/usage/mcp-tools/)
+- [Configure MCP clients](/S3-Documentation-MCP-Server/usage/client-configuration/)
+- [Set up synchronization](/S3-Documentation-MCP-Server/configuration/sync-modes/)
+

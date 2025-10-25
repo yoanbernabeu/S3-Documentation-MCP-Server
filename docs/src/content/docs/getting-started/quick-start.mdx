@@ -1,0 +1,71 @@
+---
+title: Quick Start
+description: Get started with S3 Documentation MCP in 5 minutes
+---
+
+Get your S3 Documentation MCP server running in just a few minutes.
+
+## With Docker (Recommended)
+
+The easiest way to get started is using Docker:
+
+```bash
+# 1. Prerequisites
+# Install Ollama from https://ollama.ai
+ollama pull nomic-embed-text
+
+# 2. Configure
+cp env.example .env  # Add your S3 credentials
+
+# 3. Run
+docker run -d \
+  --name s3-doc-mcp \
+  -p 3000:3000 \
+  --env-file .env \
+  -e OLLAMA_BASE_URL=http://host.docker.internal:11434 \
+  -v $(pwd)/data:/app/data \
+  yoanbernabeu/s3-doc-mcp:latest
+```
+
+Or use Docker Compose:
+
+```bash
+docker compose up -d
+```
+
+## From Source
+
+If you prefer to run from source:
+
+```bash
+# 1. Prerequisites
+# Install Ollama from https://ollama.ai
+ollama pull nomic-embed-text
+
+# 2. Install & Run
+npm install
+cp env.example .env  # Configure your S3 credentials
+npm run build && npm start
+
+# 3. For local development
+npm run dev
+```
+
+Your MCP server is now running on `http://localhost:3000`
+
+## Next Steps
+
+1. [Configure your environment variables](/S3-Documentation-MCP-Server/configuration/environment-variables/)
+2. [Connect to your MCP client](/S3-Documentation-MCP-Server/usage/client-configuration/)
+3. [Learn about MCP tools](/S3-Documentation-MCP-Server/usage/mcp-tools/)
+
+## Verify Installation
+
+Check if your server is running:
+
+```bash
+curl http://localhost:3000/health
+```
+
+You should receive a successful response indicating the server is operational.
+
