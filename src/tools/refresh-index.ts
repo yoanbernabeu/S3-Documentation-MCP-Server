@@ -9,7 +9,7 @@ import type { SyncService } from '../services/sync-service.js';
 
 // Zod schema for input
 export const refreshIndexInputSchema = z.object({
-  force: z.boolean().optional().describe('Force a complete reindexing (default: false)'),
+  force: z.boolean().optional().describe('Force complete reindexing of ALL files (default: false). ⚠️ IMPORTANT: Only set to true when user EXPLICITLY requests it (e.g., "force reindex", "rebuild from scratch", "reindex everything"). Full reindex is slow and expensive (re-downloads all files, regenerates all embeddings). Normal incremental sync is almost always sufficient.'),
 });
 
 // Zod schema for output
@@ -42,13 +42,36 @@ export async function refreshIndex(
   const mode = force ? 'full' : 'incremental';
   logger.info(`🔄 Refreshing index (mode: ${mode})...`);
   
+  // Warn about expensive operation when force is used
+  if (force) {
+    logger.warn('⚠️  FULL REINDEX MODE:');
+    logger.warn('   - All documents will be reprocessed');
+    logger.warn('   - All embeddings will be regenerated');
+    logger.warn('   - This operation is expensive and slow');
+    logger.warn('   - Only use when explicitly requested by user');
+  }
+  
   try {
     const metrics = await syncService.performSync(mode);
     
     const hasErrors = metrics.errors.length > 0;
-    const message = hasErrors
-      ? `${mode} synchronization completed with ${metrics.errors.length} error(s)`
-      : `${mode} synchronization completed successfully`;
+    
+    // Build appropriate message based on mode
+    let message: string;
+    if (force) {
+      message = hasErrors
+        ? `⚠️ Full reindex completed with ${metrics.errors.length} error(s)`
+        : '✅ Full reindex completed successfully';
+      
+      // Add educational note when force is used
+      if (metrics.documentsScanned > 0) {
+        message += `\n\n💡 Note: ${metrics.documentsScanned} files were fully reindexed. Next time, use incremental sync (default) unless you specifically need a full rebuild.`;
+      }
+    } else {
+      message = hasErrors
+        ? `Incremental sync completed with ${metrics.errors.length} error(s)`
+        : '✅ Incremental sync completed successfully';
+    }
     
     return {
       success: !hasErrors,

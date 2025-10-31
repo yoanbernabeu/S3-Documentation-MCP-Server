@@ -344,11 +344,23 @@ Returns relevant document chunks with similarity scores and sources.
 
 ```json
 {
-  "force": false  // true = full reindex, false = incremental
+  "force": false  // default: incremental sync (recommended)
 }
 ```
 
-Syncs the index with S3. Use `force: true` to rebuild everything.
+Synchronizes the documentation index with S3, detecting new, modified, or deleted files.
+
+**Parameters:**
+- `force` (boolean, optional, default: `false`)
+  - `false`: **Incremental sync** - Only processes changes (fast, efficient) ✅
+  - `true`: **Full reindex** - Reprocesses ALL files (slow, expensive) ⚠️
+
+**⚠️ Important:** The `force` parameter should **ONLY** be set to `true` when explicitly needed (e.g., "force reindex", "rebuild everything from scratch"). Full reindex is expensive:
+- Re-downloads all files from S3
+- Regenerates all embeddings
+- Rebuilds the entire vector store
+
+For normal operations, always use incremental sync (default behavior).
 
 ### `get_full_document`
 

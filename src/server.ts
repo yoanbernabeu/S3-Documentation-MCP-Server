@@ -114,9 +114,9 @@ export class S3DocMCPServer {
       'refresh_index',
       {
         title: 'Refresh Index',
-        description: 'Refreshes the documentation index by synchronizing with S3. Automatically detects new files, modifications, and deletions.',
+        description: 'Refreshes the documentation index by synchronizing with S3. Automatically detects new files, modifications, and deletions. By default, performs INCREMENTAL sync (fast, only processes changes). Use force parameter ONLY when user explicitly requests a complete rebuild.',
         inputSchema: {
-          force: z.boolean().optional().describe('Force a complete reindexing (default: false)'),
+          force: z.boolean().optional().describe('Force complete reindexing of ALL files (default: false). ⚠️ IMPORTANT: Only set to true when user EXPLICITLY requests it (e.g., "force reindex", "rebuild from scratch", "reindex everything"). Full reindex is slow and expensive (re-downloads all files, regenerates all embeddings). Normal incremental sync is almost always sufficient.'),
         },
         outputSchema: {
           success: z.boolean(),
@@ -134,6 +134,14 @@ export class S3DocMCPServer {
       },
       async ({ force }) => {
         try {
+          // Log warning if force is used
+          if (force) {
+            logger.warn('⚠️  FORCE REINDEX requested - this will reindex ALL files');
+            logger.warn('   This operation is expensive (time, API calls, embeddings)');
+          } else {
+            logger.info('ℹ️  Incremental sync requested (default behavior)');
+          }
+
           const result = await refreshIndex(
             { force },
             this.syncService

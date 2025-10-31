@@ -45,7 +45,7 @@ describe('refresh-index tool', () => {
         documents_unchanged: 7,
         errors_count: 0,
       });
-      expect(result.message).toContain('incremental');
+      expect(result.message.toLowerCase()).toContain('incremental');
       expect(result.message).toContain('successfully');
     });
 
@@ -68,7 +68,7 @@ describe('refresh-index tool', () => {
       expect(mockSyncService.performSync).toHaveBeenCalledWith('full');
       expect(result.success).toBe(true);
       expect(result.metrics.duration_seconds).toBe(5);
-      expect(result.message).toContain('full');
+      expect(result.message.toLowerCase()).toContain('full');
       expect(result.message).toContain('successfully');
     });
 
@@ -221,10 +221,53 @@ describe('refresh-index tool', () => {
         { force: false },
         mockSyncService
       );
-      expect(incrementalResult.message).toContain('incremental');
+      expect(incrementalResult.message.toLowerCase()).toContain('incremental');
 
       const fullResult = await refreshIndex({ force: true }, mockSyncService);
-      expect(fullResult.message).toContain('full');
+      expect(fullResult.message.toLowerCase()).toContain('full');
+    });
+
+    it('should include educational note when force is used with documents scanned', async () => {
+      const mockMetrics: SyncMetrics = {
+        lastSyncDate: new Date(),
+        duration: 2000,
+        documentsScanned: 15,
+        documentsAdded: 15,
+        documentsModified: 0,
+        documentsDeleted: 0,
+        documentsUnchanged: 0,
+        errors: [],
+      };
+
+      mockSyncService.performSync = vi.fn().mockResolvedValue(mockMetrics);
+
+      const result = await refreshIndex({ force: true }, mockSyncService);
+
+      expect(result.success).toBe(true);
+      expect(result.message).toContain('15 files were fully reindexed');
+      expect(result.message).toContain('Next time, use incremental sync');
+      expect(result.message.toLowerCase()).toContain('note');
+    });
+
+    it('should not include educational note for incremental sync', async () => {
+      const mockMetrics: SyncMetrics = {
+        lastSyncDate: new Date(),
+        duration: 1000,
+        documentsScanned: 10,
+        documentsAdded: 2,
+        documentsModified: 1,
+        documentsDeleted: 0,
+        documentsUnchanged: 7,
+        errors: [],
+      };
+
+      mockSyncService.performSync = vi.fn().mockResolvedValue(mockMetrics);
+
+      const result = await refreshIndex({ force: false }, mockSyncService);
+
+      expect(result.success).toBe(true);
+      expect(result.message).not.toContain('Note:');
+      expect(result.message).not.toContain('Next time');
     });
   });
 });
