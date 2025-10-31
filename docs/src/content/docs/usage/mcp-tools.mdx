@@ -97,35 +97,50 @@ Performs semantic search across your indexed documentation.
 
 ## refresh_index
 
-Synchronizes the vector index with your S3 bucket.
+Synchronizes the vector index with your S3 bucket, detecting new, modified, or deleted files.
 
 ### Parameters
 
 ```typescript
 {
-  force?: boolean; // true = full reindex, false = incremental (default)
+  force?: boolean; // true = full reindex, false = incremental (default: false)
 }
 ```
 
+:::caution[Important]
+The `force` parameter should **ONLY** be set to `true` when explicitly needed (e.g., "force reindex", "rebuild everything from scratch"). 
+
+**Full reindex is expensive:**
+- Re-downloads all files from S3
+- Regenerates all embeddings (calls to Ollama/OpenAI)
+- Rebuilds the entire vector store
+
+For normal operations, always use **incremental sync** (default behavior).
+:::
+
 ### Example Requests
 
-**Incremental Sync (Default):**
+**Incremental Sync (Recommended):**
 ```json
 {
   "force": false
 }
 ```
+or simply omit the parameter:
+```json
+{}
+```
 
-Only processes new, modified, or deleted files based on ETag comparison.
+Only processes new, modified, or deleted files based on ETag comparison. This is fast and efficient for regular updates.
 
-**Full Reindex:**
+**Full Reindex (Use Sparingly):**
 ```json
 {
   "force": true
 }
 ```
 
-Rebuilds the entire index from scratch. Use after configuration changes.
+Rebuilds the entire index from scratch. Use ONLY when explicitly needed (see "When to Use" below).
 
 ### Example Response
 
@@ -145,21 +160,40 @@ Rebuilds the entire index from scratch. Use after configuration changes.
 
 ### When to Use
 
-#### Incremental Sync (`force: false`)
+#### ✅ Incremental Sync (`force: false` or omit parameter) - RECOMMENDED
 
-Use when:
-- ✅ Documentation has been updated in S3
-- ✅ You want to add newly uploaded files
-- ✅ You need to remove deleted files
-- ✅ Regular maintenance
+**Always use for:**
+- 📝 Documentation has been updated in S3
+- ➕ Adding newly uploaded files
+- 🗑️ Removing deleted files
+- 🔄 Regular maintenance and updates
+- 📅 Scheduled synchronization
+- 🚀 Normal operations
 
-#### Full Reindex (`force: true`)
+**Performance:**
+- ⚡ Fast (seconds to minutes depending on changes)
+- 💰 Cost-effective (only processes changes)
+- 📊 Efficient (minimal API calls)
 
-Use when:
-- ✅ Switching embedding providers (Ollama ↔ OpenAI)
-- ✅ Changing chunk size or overlap settings
-- ✅ Suspecting index corruption
-- ✅ After significant configuration changes
+#### ⚠️ Full Reindex (`force: true`) - USE SPARINGLY
+
+**Only use when explicitly needed:**
+- 🔄 Switching embedding providers (Ollama ↔ OpenAI)
+- ⚙️ Changing chunk size or overlap settings
+- 🔧 Suspecting index corruption
+- 🎯 After significant RAG configuration changes
+- 🆘 Troubleshooting persistent issues
+
+**❌ DO NOT use for:**
+- Regular documentation updates (use incremental instead)
+- Routine maintenance
+- Adding a few new files
+- "Just to be safe" reasoning
+
+**Performance Impact:**
+- 🐌 Slow (minutes to hours depending on corpus size)
+- 💸 Expensive (all files reprocessed, all embeddings regenerated)
+- 📈 High API usage (S3 downloads + embedding calls)
 
 :::tip
 With `SYNC_MODE=startup` (default), the server automatically syncs on startup. You rarely need to call `refresh_index` manually unless:
