@@ -64,7 +64,7 @@ S3_REGION=auto
 Choose your embedding provider:
 
 ```bash
-# ollama (default) or openai
+# ollama (default), openai, or google
 EMBEDDING_PROVIDER=ollama
 ```
 
@@ -78,6 +78,12 @@ OLLAMA_EMBEDDING_MODEL=nomic-embed-text
 ```bash
 OPENAI_API_KEY=sk-...your-key...
 OPENAI_EMBEDDING_MODEL=text-embedding-3-small  # or text-embedding-3-large
+```
+
+**For Google (Cloud):**
+```bash
+GOOGLE_API_KEY=AIzaSy-...your-key...
+GOOGLE_EMBEDDING_MODEL=gemini-embedding-001
 ```
 
 See [Embedding Providers](/S3-Documentation-MCP-Server/configuration/embedding-providers/) for detailed comparison.
@@ -189,7 +195,7 @@ ENABLE_AUTH=false
 ### Production
 
 ```bash
-EMBEDDING_PROVIDER=openai
+EMBEDDING_PROVIDER=google  # or openai
 SYNC_MODE=periodic
 SYNC_INTERVAL_MINUTES=30
 ENABLE_AUTH=true

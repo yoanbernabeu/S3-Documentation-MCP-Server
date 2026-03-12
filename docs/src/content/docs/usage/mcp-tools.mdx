@@ -112,7 +112,7 @@ The `force` parameter should **ONLY** be set to `true` when explicitly needed (e
 
 **Full reindex is expensive:**
 - Re-downloads all files from S3
-- Regenerates all embeddings (calls to Ollama/OpenAI)
+- Regenerates all embeddings (calls to Ollama/OpenAI/Google)
 - Rebuilds the entire vector store
 
 For normal operations, always use **incremental sync** (default behavior).
@@ -178,7 +178,7 @@ Rebuilds the entire index from scratch. Use ONLY when explicitly needed (see "Wh
 #### ⚠️ Full Reindex (`force: true`) - USE SPARINGLY
 
 **Only use when explicitly needed:**
-- 🔄 Switching embedding providers (Ollama ↔ OpenAI)
+- 🔄 Switching embedding providers (Ollama ↔ OpenAI ↔ Google)
 - ⚙️ Changing chunk size or overlap settings
 - 🔧 Suspecting index corruption
 - 🎯 After significant RAG configuration changes

@@ -1,21 +1,21 @@
 ---
 title: Embedding Providers
-description: Choose between Ollama (local) and OpenAI (cloud) for embeddings
+description: Choose between Ollama (local), OpenAI (cloud) or Google (cloud) for embeddings
 ---
 
-The S3 Documentation MCP server supports two embedding providers: **Ollama** (local) and **OpenAI** (cloud).
+The S3 Documentation MCP server supports three embedding providers: **Ollama** (local), **OpenAI** (cloud), and **Google** (cloud).
 
 ## Comparison
 
-| Feature | Ollama | OpenAI |
-|---------|--------|--------|
-| **Cost** | Free | ~$0.00002/1K tokens |
-| **Privacy** | 100% local | Data sent to OpenAI |
-| **Offline** | ✅ Yes | ❌ No |
-| **Accuracy** | Good | Excellent |
-| **Multilingual** | Good | Excellent |
-| **Setup** | Install + model download | API key only |
-| **Resources** | Local CPU/GPU | Cloud-based |
+| Feature | Ollama | OpenAI | Google |
+|---------|--------|--------|--------|
+| **Cost** | Free | ~$0.00002/1K tokens | Free tier generous |
+| **Privacy** | 100% local | Data sent to OpenAI | Data sent to Google |
+| **Offline** | ✅ Yes | ❌ No | ❌ No |
+| **Accuracy** | Good | Excellent | Excellent |
+| **Multilingual** | Good | Excellent | Excellent |
+| **Setup** | Install + model download | API key only | API key only |
+| **Resources** | Local CPU/GPU | Cloud-based | Cloud-based |
 
 ## Ollama (Local)
 
@@ -144,9 +144,51 @@ Typical documentation indexing costs:
 
 **Search costs are negligible** (~$0.00001 per query).
 
+## Google (Cloud)
+
+**Recommended for:** Production deployments, multilingual content, generous free tier
+
+### Setup
+
+1. Get an API key from [Google AI Studio](https://aistudio.google.com/apikey)
+
+2. Configure in `.env`:
+   ```bash
+   EMBEDDING_PROVIDER=google
+   GOOGLE_API_KEY=AIzaSy...your-key...
+   GOOGLE_EMBEDDING_MODEL=gemini-embedding-001
+   ```
+
+### Model Options
+
+#### gemini-embedding-001 (Recommended)
+
+```bash
+GOOGLE_EMBEDDING_MODEL=gemini-embedding-001
+```
+
+- **Dimensions**: 3072
+- **Cost**: Free tier generous, then pay-per-use
+- **Performance**: State-of-the-art accuracy
+- **Best for**: Most use cases, multilingual content
+
+### Pros
+
+- ✅ **High Accuracy**: Latest Google embedding technology
+- ✅ **Generous Free Tier**: Significant free usage included
+- ✅ **Multilingual**: Excellent support for 100+ languages
+- ✅ **No Local Resources**: Runs entirely in the cloud
+- ✅ **Fast**: High-performance API
+
+### Cons
+
+- ⚠️ Requires API key
+- ⚠️ Data sent to Google servers
+- ⚠️ Requires internet connection
+
 ## Fallback Behavior
 
-If you set `EMBEDDING_PROVIDER=openai` but don't provide a valid `OPENAI_API_KEY`, the server will:
+If you set `EMBEDDING_PROVIDER=openai` or `EMBEDDING_PROVIDER=google` but don't provide a valid API key, the server will:
 
 1. ⚠️ Log a warning
 2. 🔄 Automatically fall back to Ollama (if configured)
@@ -157,7 +199,7 @@ This ensures the server can always start with a working configuration.
 ## Switching Providers
 
 :::caution[Important]
-When switching between providers, you **must rebuild your vector index** because embeddings are not compatible:
+When switching between providers, you **must rebuild your vector index** because embeddings from different providers are not compatible:
 
 ```bash
 # Delete existing index
@@ -177,6 +219,7 @@ Real-world performance on a typical documentation set (500 pages):
 | Ollama (nomic-embed-text) | ~5 min | ~50ms | Good ⭐⭐⭐⭐ |
 | OpenAI (text-embedding-3-small) | ~2 min | ~100ms | Excellent ⭐⭐⭐⭐⭐ |
 | OpenAI (text-embedding-3-large) | ~2 min | ~100ms | Best ⭐⭐⭐⭐⭐ |
+| Google (gemini-embedding-001) | ~2 min | ~100ms | Excellent ⭐⭐⭐⭐⭐ |
 
 *Times measured on: M1 MacBook Pro (Ollama), standard network connection (OpenAI)*
 
@@ -201,6 +244,13 @@ EMBEDDING_PROVIDER=openai
 OPENAI_EMBEDDING_MODEL=text-embedding-3-large
 ```
 Maximum accuracy across all languages.
+
+### For Production (Google)
+```bash
+EMBEDDING_PROVIDER=google
+GOOGLE_EMBEDDING_MODEL=gemini-embedding-001
+```
+Excellent accuracy with a generous free tier.
 
 ### For Privacy-Critical Deployments
 ```bash

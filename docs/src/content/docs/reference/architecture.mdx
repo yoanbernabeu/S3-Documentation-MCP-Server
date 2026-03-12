@@ -25,7 +25,7 @@ The system consists of 6 main components working together to provide RAG capabil
     Chunks documents, generates embeddings, stores vectors, performs similarity search.
   </Card>
   <Card title="📡 Embedding Providers" icon="puzzle">
-    Generate vector embeddings via Ollama (local) or OpenAI (cloud).
+    Generate vector embeddings via Ollama (local), OpenAI (cloud), or Google (cloud).
   </Card>
   <Card title="📚 ResourceService" icon="open-book">
     Manages MCP Resources API for file discovery and direct access.
@@ -40,7 +40,7 @@ MCP Client → MCP Server → [S3Loader ↔ S3 Bucket]
          SyncService → VectorStore → HNSWLib Index
                           ↓
                   Embedding Provider
-                  (Ollama / OpenAI)
+                  (Ollama / OpenAI / Google)
 ```
 
 ---
@@ -287,6 +287,27 @@ Generate vector embeddings for text chunks.
 - `text-embedding-3-large`: ~$0.00013/1K tokens
 
 </TabItem>
+
+<TabItem label="Google (Cloud)">
+
+**Configuration:**
+- Endpoint: Google Generative AI API
+- Model: `gemini-embedding-001` (3072 dimensions)
+
+**API Flow:**
+
+1. `VectorStore` sends text to `GoogleProvider`
+2. `GoogleProvider` calls Google Generative AI embeddings API
+3. Google returns 3072-dimensional vector
+4. Vector stored in HNSWLib index
+
+**Advantages:**
+- ✅ State-of-the-art accuracy
+- ✅ Generous free tier
+- ✅ Excellent multilingual support (100+ languages)
+- ✅ No local resources needed
+
+</TabItem>
 </Tabs>
 
 <Aside type="caution">
@@ -493,8 +514,9 @@ If you need enterprise scale:
 
 ### Embedding Providers
 
-- **`ollama`** - Local embedding generation
-- **`openai`** - Cloud embedding API
+- **`@langchain/ollama`** - Local embedding generation
+- **`@langchain/openai`** - OpenAI cloud embedding API
+- **`@langchain/google-genai`** - Google Generative AI cloud embedding API
 
 ### Development Tools
 
@@ -602,12 +624,13 @@ Currently logged but not exported:
   </Card>
 </CardGrid>
 
-### Why Two Embedding Providers?
+### Why Three Embedding Providers?
 
 **Flexibility**: Users choose based on their needs:
 
 - **Ollama**: Privacy, offline, free
 - **OpenAI**: Accuracy, multilingual, cloud
+- **Google**: Accuracy, generous free tier, cloud
 
 No vendor lock-in. Switch anytime.
 

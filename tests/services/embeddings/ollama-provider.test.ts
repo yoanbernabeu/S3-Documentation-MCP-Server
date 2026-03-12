@@ -6,7 +6,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { OllamaEmbeddingProvider } from '../../../src/services/embeddings/ollama-provider.js';
 
 // Mock OllamaEmbeddings
-vi.mock('@langchain/community/embeddings/ollama', () => ({
+vi.mock('@langchain/ollama', () => ({
   OllamaEmbeddings: vi.fn().mockImplementation(() => ({
     embedDocuments: vi.fn().mockResolvedValue([
       [0.1, 0.2, 0.3],
@@ -36,7 +36,7 @@ describe('OllamaEmbeddingProvider', () => {
   describe('embedDocuments', () => {
     it('should embed multiple documents', async () => {
       const texts = ['text 1', 'text 2'];
-      
+
       const embeddings = await provider.embedDocuments(texts);
 
       expect(embeddings).toBeDefined();
@@ -53,7 +53,7 @@ describe('OllamaEmbeddingProvider', () => {
     });
 
     it('should handle errors gracefully', async () => {
-      const { OllamaEmbeddings } = await import('@langchain/community/embeddings/ollama');
+      const { OllamaEmbeddings } = await import('@langchain/ollama');
       vi.mocked(OllamaEmbeddings).mockImplementationOnce(() => ({
         embedDocuments: vi.fn().mockRejectedValue(new Error('Network error')),
         embedQuery: vi.fn(),
@@ -68,7 +68,7 @@ describe('OllamaEmbeddingProvider', () => {
   describe('embedQuery', () => {
     it('should embed a single query', async () => {
       const text = 'test query';
-      
+
       const embedding = await provider.embedQuery(text);
 
       expect(embedding).toBeDefined();
@@ -77,7 +77,7 @@ describe('OllamaEmbeddingProvider', () => {
     });
 
     it('should handle errors gracefully', async () => {
-      const { OllamaEmbeddings } = await import('@langchain/community/embeddings/ollama');
+      const { OllamaEmbeddings } = await import('@langchain/ollama');
       vi.mocked(OllamaEmbeddings).mockImplementationOnce(() => ({
         embedDocuments: vi.fn(),
         embedQuery: vi.fn().mockRejectedValue(new Error('Network error')),
@@ -101,4 +101,3 @@ describe('OllamaEmbeddingProvider', () => {
     });
   });
 });
-

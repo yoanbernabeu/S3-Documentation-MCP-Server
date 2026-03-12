@@ -25,6 +25,15 @@ vi.mock('../../../src/services/embeddings/openai-provider.js', () => ({
   })),
 }));
 
+vi.mock('../../../src/services/embeddings/google-provider.js', () => ({
+  GoogleEmbeddingProvider: vi.fn().mockImplementation((apiKey, model) => ({
+    embedDocuments: vi.fn(),
+    embedQuery: vi.fn(),
+    getProviderName: () => 'Google',
+    getModelName: () => model,
+  })),
+}));
+
 describe('createEmbeddingProvider', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -111,6 +120,53 @@ describe('createEmbeddingProvider', () => {
     });
   });
 
+  describe('Google provider', () => {
+    it('should create Google provider when configured', () => {
+      const config: Config = {
+        embeddings: {
+          provider: 'google',
+          google: {
+            apiKey: 'AIzaSy-test-key',
+            model: 'gemini-embedding-001',
+          },
+        },
+      } as Config;
+
+      const provider = createEmbeddingProvider(config);
+
+      expect(provider).toBeDefined();
+      expect(provider.getProviderName()).toBe('Google');
+      expect(provider.getModelName()).toBe('gemini-embedding-001');
+    });
+
+    it('should fallback to Ollama when Google config is missing', () => {
+      const config: Config = {
+        embeddings: {
+          provider: 'google',
+          ollama: {
+            baseUrl: 'http://localhost:11434',
+            model: 'nomic-embed-text',
+          },
+        },
+      } as Config;
+
+      const provider = createEmbeddingProvider(config);
+
+      expect(provider).toBeDefined();
+      expect(provider.getProviderName()).toBe('Ollama');
+    });
+
+    it('should throw error when both Google and Ollama configs are missing', () => {
+      const config: Config = {
+        embeddings: {
+          provider: 'google',
+        },
+      } as Config;
+
+      expect(() => createEmbeddingProvider(config)).toThrow('No valid embedding provider configuration found');
+    });
+  });
+
   describe('Invalid provider', () => {
     it('should throw error for unknown provider', () => {
       const config: Config = {
@@ -123,4 +179,3 @@ describe('createEmbeddingProvider', () => {
     });
   });
 });
-

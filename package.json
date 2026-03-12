@@ -30,15 +30,16 @@
   "license": "MIT",
   "dependencies": {
     "@aws-sdk/client-s3": "^3.705.0",
-    "@langchain/community": "^0.3.18",
-    "@langchain/core": "^0.3.24",
-    "@langchain/openai": "^0.3.17",
-    "@langchain/textsplitters": "^0.1.0",
+    "@langchain/community": "^1.1.23",
+    "@langchain/core": "^1.1.32",
+    "@langchain/google-genai": "^2.1.25",
+    "@langchain/ollama": "^1.2.6",
+    "@langchain/openai": "^1.2.13",
+    "@langchain/textsplitters": "^1.0.1",
     "@modelcontextprotocol/sdk": "^1.0.4",
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
     "hnswlib-node": "^3.0.0",
-    "ollama": "^0.5.11",
     "zod": "^3.24.1"
   },
   "devDependencies": {

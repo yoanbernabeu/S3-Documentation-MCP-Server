@@ -22,18 +22,18 @@ function getEnvNumber(name: string, defaultValue: number): number {
 
 // Build embeddings configuration
 function buildEmbeddingsConfig() {
-  const provider = getEnvVar('EMBEDDING_PROVIDER', 'ollama') as 'ollama' | 'openai';
-  
+  const provider = getEnvVar('EMBEDDING_PROVIDER', 'ollama') as 'ollama' | 'openai' | 'google';
+
   const config: Config['embeddings'] = {
     provider,
   };
-  
+
   // Always include Ollama config as fallback
   config.ollama = {
     baseUrl: getEnvVar('OLLAMA_BASE_URL', 'http://localhost:11434'),
     model: getEnvVar('OLLAMA_EMBEDDING_MODEL', 'nomic-embed-text'),
   };
-  
+
   // Include OpenAI config if provider is OpenAI or if API key is set
   const openaiApiKey = process.env.OPENAI_API_KEY;
   if (provider === 'openai' || openaiApiKey) {
@@ -42,7 +42,16 @@ function buildEmbeddingsConfig() {
       model: getEnvVar('OPENAI_EMBEDDING_MODEL', 'text-embedding-3-small'),
     };
   }
-  
+
+  // Include Google config if provider is Google or if API key is set
+  const googleApiKey = process.env.GOOGLE_API_KEY;
+  if (provider === 'google' || googleApiKey) {
+    config.google = {
+      apiKey: googleApiKey ?? '',
+      model: getEnvVar('GOOGLE_EMBEDDING_MODEL', 'gemini-embedding-001'),
+    };
+  }
+
   return config;
 }
 

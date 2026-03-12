@@ -9,7 +9,6 @@ import type { DocumentToIndex } from '../../src/types/index.js';
 
 // Mock dependencies
 vi.mock('fs');
-vi.mock('@langchain/community/embeddings/ollama');
 vi.mock('@langchain/community/vectorstores/hnswlib');
 
 describe('HNSWVectorStore', () => {

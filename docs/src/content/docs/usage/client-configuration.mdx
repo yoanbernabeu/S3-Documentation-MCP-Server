@@ -1,6 +1,6 @@
 ---
 title: Client Configuration
-description: Configure Cursor, Claude Desktop, and other MCP clients to connect to S3 Documentation MCP
+description: Configure Cursor, Claude Desktop, Claude Code, and other MCP clients to connect to S3 Documentation MCP
 ---
 
 Once your S3 Documentation MCP server is running, configure your MCP client to connect to it.
@@ -136,6 +136,41 @@ After editing the configuration:
 2. Quit Claude Desktop completely
 3. Restart the application
 4. Verify the MCP server appears in the available tools
+
+## Claude Code (CLI)
+
+### Add via Command Line
+
+The fastest way to add the MCP server to Claude Code:
+
+```bash
+claude mcp add doc --transport http http://127.0.0.1:3000/mcp
+```
+
+### With Authentication
+
+```bash
+claude mcp add doc --transport http http://127.0.0.1:3000/mcp \
+  --header "Authorization: Bearer your-secret-key"
+```
+
+### Verify
+
+After adding, verify the server is connected:
+
+```bash
+claude mcp list
+```
+
+You should see `doc` listed with 3 tools available.
+
+### Remove
+
+To remove the MCP server from Claude Code:
+
+```bash
+claude mcp remove doc
+```
 
 ## Docker Configuration
 

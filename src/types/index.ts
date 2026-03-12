@@ -17,12 +17,16 @@ export interface Config {
   
   // Embeddings
   embeddings: {
-    provider: 'ollama' | 'openai';
+    provider: 'ollama' | 'openai' | 'google';
     ollama?: {
       baseUrl: string;
       model: string;
     };
     openai?: {
+      apiKey: string;
+      model: string;
+    };
+    google?: {
       apiKey: string;
       model: string;
     };

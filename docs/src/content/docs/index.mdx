@@ -226,10 +226,11 @@ OLLAMA_BASE_URL=http://localhost:11434</code></pre>
         <div class="message-avatar">🤖</div>
         <div class="message-content">
           <div class="message-text">
-            <p>The MCP server supports two embedding providers:</p>
+            <p>The MCP server supports three embedding providers:</p>
             <p>🦙 <strong>Ollama</strong> - Free, local, privacy-focused (default)</p>
             <p>🤖 <strong>OpenAI</strong> - Cloud-based, requires API key</p>
-            <p>Both use the same interface, making it easy to switch!</p>
+            <p>🔵 <strong>Google</strong> - Cloud-based, generous free tier</p>
+            <p>All use the same interface, making it easy to switch!</p>
           </div>
           <div class="message-sources" style="margin-top: 0.75rem;">
             <div class="source-label">📚 Sources:</div>
@@ -379,7 +380,7 @@ Connect your **LLM** (Claude, Cursor, GPT) to **S3-stored documentation** for in
   
   <Card title="🏠 Your Data, Your Rules" icon="setting">
     <div class="feature-content">
-      Run embeddings **locally** with Ollama (free, private) or use **OpenAI** (cloud, high-accuracy). Switch anytime.
+      Run embeddings **locally** with Ollama (free, private) or use **OpenAI** / **Google** (cloud, high-accuracy). Switch anytime.
     </div>
   </Card>
   
@@ -507,7 +508,7 @@ docker run -d -p 3000:3000 --env-file .env \
   <Card title="For Scale" icon="up-caret">
     **Start small, scale smart**
     
-    Free Ollama for dev → OpenAI for production. No vendor lock-in, no rewrites.
+    Free Ollama for dev → OpenAI or Google for production. No vendor lock-in, no rewrites.
 	</Card>
   
   <Card title="For Any S3 Storage" icon="star">

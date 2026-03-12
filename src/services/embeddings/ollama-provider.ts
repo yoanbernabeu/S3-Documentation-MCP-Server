@@ -2,69 +2,26 @@
  * Ollama Embedding Provider
  */
 
-import { OllamaEmbeddings } from '@langchain/community/embeddings/ollama';
-import type { EmbeddingProvider } from '../../types/index.js';
+import { OllamaEmbeddings } from '@langchain/ollama';
 import { logger } from '../../config/index.js';
+import { BaseEmbeddingProvider } from './base-provider.js';
 
-export class OllamaEmbeddingProvider implements EmbeddingProvider {
-  private embeddings: OllamaEmbeddings;
-  private baseUrl: string;
-  private model: string;
+export class OllamaEmbeddingProvider extends BaseEmbeddingProvider {
+  protected readonly embeddings: OllamaEmbeddings;
+  protected readonly providerName = 'Ollama';
+  protected readonly modelName: string;
 
   constructor(baseUrl: string, model: string) {
-    this.baseUrl = baseUrl;
-    this.model = model;
-    
+    super();
+    this.modelName = model;
+
     this.embeddings = new OllamaEmbeddings({
-      model: this.model,
-      baseUrl: this.baseUrl,
+      model: this.modelName,
+      baseUrl,
     });
-    
+
     logger.info(`🤖 Ollama Embedding Provider initialized`);
-    logger.info(`   Model: ${this.model}`);
-    logger.info(`   Base URL: ${this.baseUrl}`);
-  }
-
-  async embedDocuments(texts: string[]): Promise<number[][]> {
-    try {
-      logger.debug(`🧮 Embedding ${texts.length} documents with Ollama...`);
-      const startTime = Date.now();
-      
-      const embeddings = await this.embeddings.embedDocuments(texts);
-      
-      const duration = Date.now() - startTime;
-      logger.debug(`✅ Documents embedded in ${duration}ms`);
-      
-      return embeddings;
-    } catch (error) {
-      logger.error(`❌ Error embedding documents with Ollama:`, error);
-      throw new Error(`Failed to embed documents: ${error instanceof Error ? error.message : 'Unknown error'}`);
-    }
-  }
-
-  async embedQuery(text: string): Promise<number[]> {
-    try {
-      logger.debug(`🧮 Embedding query with Ollama...`);
-      const startTime = Date.now();
-      
-      const embedding = await this.embeddings.embedQuery(text);
-      
-      const duration = Date.now() - startTime;
-      logger.debug(`✅ Query embedded in ${duration}ms`);
-      
-      return embedding;
-    } catch (error) {
-      logger.error(`❌ Error embedding query with Ollama:`, error);
-      throw new Error(`Failed to embed query: ${error instanceof Error ? error.message : 'Unknown error'}`);
-    }
-  }
-
-  getProviderName(): string {
-    return 'Ollama';
-  }
-
-  getModelName(): string {
-    return this.model;
+    logger.info(`   Model: ${this.modelName}`);
+    logger.info(`   Base URL: ${baseUrl}`);
   }
 }
-
